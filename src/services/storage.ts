@@ -1,12 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StreakData, UserSettings, BookmarkEntry, ReadingProgress } from '../types';
+import {
+  StreakData,
+  UserSettings,
+  BookmarkEntry,
+  ReadingProgress,
+  OnboardingState,
+  ReadingPlanProgress,
+} from '../types';
 
 const KEYS = {
-  STREAK_DATA: '@scripture_streak_data',
-  USER_SETTINGS: '@scripture_user_settings',
-  BOOKMARKS: '@scripture_bookmarks',
-  READING_PROGRESS: '@scripture_reading_progress',
-  LAST_VERSE_INDEX: '@scripture_last_verse_index',
+  STREAK_DATA: '@ss_streak_data',
+  USER_SETTINGS: '@ss_user_settings',
+  BOOKMARKS: '@ss_bookmarks',
+  READING_PROGRESS: '@ss_reading_progress',
+  LAST_VERSE_INDEX: '@ss_last_verse_index',
+  ONBOARDING: '@ss_onboarding',
+  READING_PLANS: '@ss_reading_plans',
 } as const;
 
 const DEFAULT_STREAK: StreakData = {
@@ -22,6 +31,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   preferredTranslation: 'NIV',
   streakReminders: true,
   dailyGoalVerses: 1,
+  isPremium: false,
 };
 
 const DEFAULT_PROGRESS: ReadingProgress = {
@@ -29,6 +39,15 @@ const DEFAULT_PROGRESS: ReadingProgress = {
   currentChapter: 1,
   completedBooks: [],
   completedChapters: {},
+};
+
+const DEFAULT_ONBOARDING: OnboardingState = {
+  completed: false,
+  translation: 'NIV',
+  dailyGoal: 'verse',
+  customGoalCount: 1,
+  notificationTime: '08:00',
+  notificationsEnabled: true,
 };
 
 function getToday(): string {
@@ -43,6 +62,35 @@ function getYesterday(): string {
 }
 
 export const StorageService = {
+  // Onboarding
+  async getOnboardingState(): Promise<OnboardingState> {
+    try {
+      const json = await AsyncStorage.getItem(KEYS.ONBOARDING);
+      if (!json) return { ...DEFAULT_ONBOARDING };
+      return JSON.parse(json) as OnboardingState;
+    } catch {
+      return { ...DEFAULT_ONBOARDING };
+    }
+  },
+
+  async saveOnboardingState(state: OnboardingState): Promise<void> {
+    await AsyncStorage.setItem(KEYS.ONBOARDING, JSON.stringify(state));
+  },
+
+  async completeOnboarding(state: OnboardingState): Promise<void> {
+    const completed = { ...state, completed: true };
+    await AsyncStorage.setItem(KEYS.ONBOARDING, JSON.stringify(completed));
+    const settings: UserSettings = {
+      notificationTime: state.notificationTime,
+      preferredTranslation: state.translation,
+      streakReminders: state.notificationsEnabled,
+      dailyGoalVerses: state.dailyGoal === 'custom' ? state.customGoalCount : 1,
+      isPremium: false,
+    };
+    await this.saveUserSettings(settings);
+  },
+
+  // Streaks
   async getStreakData(): Promise<StreakData> {
     try {
       const json = await AsyncStorage.getItem(KEYS.STREAK_DATA);
@@ -86,11 +134,12 @@ export const StorageService = {
     return data.readDates.includes(getToday());
   },
 
+  // Settings
   async getUserSettings(): Promise<UserSettings> {
     try {
       const json = await AsyncStorage.getItem(KEYS.USER_SETTINGS);
       if (!json) return { ...DEFAULT_SETTINGS };
-      return JSON.parse(json) as UserSettings;
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(json) };
     } catch {
       return { ...DEFAULT_SETTINGS };
     }
@@ -100,6 +149,7 @@ export const StorageService = {
     await AsyncStorage.setItem(KEYS.USER_SETTINGS, JSON.stringify(settings));
   },
 
+  // Bookmarks
   async getBookmarks(): Promise<BookmarkEntry[]> {
     try {
       const json = await AsyncStorage.getItem(KEYS.BOOKMARKS);
@@ -122,6 +172,7 @@ export const StorageService = {
     await AsyncStorage.setItem(KEYS.BOOKMARKS, JSON.stringify(filtered));
   },
 
+  // Reading Progress
   async getReadingProgress(): Promise<ReadingProgress> {
     try {
       const json = await AsyncStorage.getItem(KEYS.READING_PROGRESS);
@@ -136,6 +187,7 @@ export const StorageService = {
     await AsyncStorage.setItem(KEYS.READING_PROGRESS, JSON.stringify(progress));
   },
 
+  // Verse Index
   async getLastVerseIndex(): Promise<number> {
     try {
       const value = await AsyncStorage.getItem(KEYS.LAST_VERSE_INDEX);
@@ -147,5 +199,46 @@ export const StorageService = {
 
   async saveLastVerseIndex(index: number): Promise<void> {
     await AsyncStorage.setItem(KEYS.LAST_VERSE_INDEX, String(index));
+  },
+
+  // Reading Plans
+  async getReadingPlanProgress(planId: string): Promise<ReadingPlanProgress | null> {
+    try {
+      const json = await AsyncStorage.getItem(KEYS.READING_PLANS);
+      if (!json) return null;
+      const allPlans = JSON.parse(json) as Record<string, ReadingPlanProgress>;
+      return allPlans[planId] || null;
+    } catch {
+      return null;
+    }
+  },
+
+  async saveReadingPlanProgress(progress: ReadingPlanProgress): Promise<void> {
+    try {
+      const json = await AsyncStorage.getItem(KEYS.READING_PLANS);
+      const allPlans = json ? JSON.parse(json) : {};
+      allPlans[progress.planId] = progress;
+      await AsyncStorage.setItem(KEYS.READING_PLANS, JSON.stringify(allPlans));
+    } catch {
+      const allPlans: Record<string, ReadingPlanProgress> = {};
+      allPlans[progress.planId] = progress;
+      await AsyncStorage.setItem(KEYS.READING_PLANS, JSON.stringify(allPlans));
+    }
+  },
+
+  async getAllReadingPlanProgress(): Promise<Record<string, ReadingPlanProgress>> {
+    try {
+      const json = await AsyncStorage.getItem(KEYS.READING_PLANS);
+      if (!json) return {};
+      return JSON.parse(json);
+    } catch {
+      return {};
+    }
+  },
+
+  // Reset
+  async resetAllData(): Promise<void> {
+    const keys = Object.values(KEYS);
+    await AsyncStorage.multiRemove(keys);
   },
 };

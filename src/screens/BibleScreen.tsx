@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,18 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Animated,
+  Platform,
+  Share,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
 import { Card } from '../components/Card';
 import { BIBLE_BOOKS } from '../constants/bible';
 import { VerseService } from '../services/verse';
+import { StorageService } from '../services/storage';
 import type { BibleBook, Verse } from '../types';
 
 type ViewMode = 'books' | 'chapters' | 'verses';
@@ -24,6 +30,10 @@ export function BibleScreen() {
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [testament, setTestament] = useState<'all' | 'old' | 'new'>('all');
+  const [selectedVerse, setSelectedVerse] = useState<Verse | null>(null);
+  const [copiedVerse, setCopiedVerse] = useState<string | null>(null);
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const filteredBooks = useMemo(() => {
     let books: BibleBook[] = [...BIBLE_BOOKS];
@@ -44,24 +54,72 @@ export function BibleScreen() {
     return VerseService.getChapterVerses(selectedBook.name, selectedChapter);
   }, [selectedBook, selectedChapter]);
 
+  const animateTransition = useCallback((forward: boolean) => {
+    slideAnim.setValue(forward ? 30 : -30);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  }, [slideAnim]);
+
   const handleSelectBook = (book: BibleBook) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedBook(book);
     setViewMode('chapters');
     setSearchQuery('');
+    animateTransition(true);
   };
 
   const handleSelectChapter = (chapter: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedChapter(chapter);
     setViewMode('verses');
+    animateTransition(true);
   };
 
   const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (viewMode === 'verses') {
       setViewMode('chapters');
       setSelectedChapter(null);
+      setSelectedVerse(null);
+      animateTransition(false);
     } else if (viewMode === 'chapters') {
       setViewMode('books');
       setSelectedBook(null);
+      animateTransition(false);
+    }
+  };
+
+  const handleBookmarkVerse = async (verse: Verse) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await StorageService.addBookmark({
+      id: `${verse.book}-${verse.chapter}-${verse.verse}-${Date.now()}`,
+      verse,
+      date: new Date().toISOString(),
+    });
+    setSelectedVerse(verse);
+    setTimeout(() => setSelectedVerse(null), 1500);
+  };
+
+  const handleCopyVerse = async (verse: Verse) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const ref = VerseService.formatReference(verse);
+    const text = `\u201C${verse.text}\u201D \u2014 ${ref} (${verse.translation})`;
+    await Clipboard.setStringAsync(text);
+    setCopiedVerse(`${verse.book}-${verse.chapter}-${verse.verse}`);
+    setTimeout(() => setCopiedVerse(null), 1500);
+  };
+
+  const handleShareVerse = async (verse: Verse) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const ref = VerseService.formatReference(verse);
+    const text = `\u201C${verse.text}\u201D\n\n\u2014 ${ref} (${verse.translation})\n\nShared via Scripture Streak`;
+    try {
+      await Share.share({ message: text });
+    } catch {
+      await Clipboard.setStringAsync(text);
     }
   };
 
@@ -69,7 +127,11 @@ export function BibleScreen() {
     if (viewMode === 'books') return null;
     return (
       <View style={styles.breadcrumb}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={handleBack}
+          style={styles.backButton}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <Text style={styles.backIcon}>{'\u2190'}</Text>
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
@@ -123,10 +185,57 @@ export function BibleScreen() {
     );
   };
 
-  const renderVerseItem = ({ item }: { item: Verse }) => (
-    <View style={styles.verseItem}>
-      <Text style={styles.verseNumber}>{item.verse}</Text>
-      <Text style={styles.verseContent}>{item.text}</Text>
+  const verseKey = (item: Verse) => `${item.book}-${item.chapter}-${item.verse}`;
+
+  const renderVerseItem = ({ item }: { item: Verse }) => {
+    const key = verseKey(item);
+    const isBookmarked = selectedVerse && verseKey(selectedVerse) === key;
+    const isCopied = copiedVerse === key;
+    return (
+      <View style={styles.verseItem}>
+        <Text style={styles.verseNumber}>{item.verse}</Text>
+        <View style={styles.verseContentWrap}>
+          <Text style={styles.verseContent}>{item.text}</Text>
+          <View style={styles.verseItemActions}>
+            <TouchableOpacity
+              onPress={() => handleBookmarkVerse(item)}
+              style={styles.verseActionBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.verseActionIcon}>
+                {isBookmarked ? '\u2705' : '\uD83D\uDD16'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleCopyVerse(item)}
+              style={styles.verseActionBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.verseActionIcon}>
+                {isCopied ? '\u2705' : '\uD83D\uDCCB'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleShareVerse(item)}
+              style={styles.verseActionBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.verseActionIcon}>{'\uD83D\uDCE4'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Empty state for search
+  const renderEmptySearch = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyIcon}>{'\uD83D\uDD0D'}</Text>
+      <Text style={styles.emptyTitle}>No Books Found</Text>
+      <Text style={styles.emptyMessage}>
+        Try a different search term or browse by testament.
+      </Text>
     </View>
   );
 
@@ -145,9 +254,13 @@ export function BibleScreen() {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCorrect={false}
+                returnKeyType="search"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <Text style={styles.clearButton}>{'\u2715'}</Text>
                 </TouchableOpacity>
               )}
@@ -157,7 +270,10 @@ export function BibleScreen() {
                 <TouchableOpacity
                   key={t}
                   style={[styles.filterButton, testament === t && styles.filterButtonActive]}
-                  onPress={() => setTestament(t)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTestament(t);
+                  }}
                 >
                   <Text style={[styles.filterButtonText, testament === t && styles.filterButtonTextActive]}>
                     {t === 'all' ? 'All' : t === 'old' ? 'Old Testament' : 'New Testament'}
@@ -171,39 +287,42 @@ export function BibleScreen() {
 
       {renderBreadcrumb()}
 
-      {viewMode === 'books' && (
-        <FlatList
-          data={filteredBooks}
-          renderItem={renderBookItem}
-          keyExtractor={(item) => item.name}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <Animated.View style={[styles.animatedContent, { transform: [{ translateX: slideAnim }] }]}>
+        {viewMode === 'books' && (
+          <FlatList
+            data={filteredBooks}
+            renderItem={renderBookItem}
+            keyExtractor={(item) => item.name}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptySearch}
+          />
+        )}
 
-      {viewMode === 'chapters' && (
-        <ScrollView contentContainerStyle={styles.listContent}>
-          <Card>
-            <Text style={styles.sectionTitle}>Select a Chapter</Text>
-            {renderChapterGrid()}
-          </Card>
-        </ScrollView>
-      )}
+        {viewMode === 'chapters' && (
+          <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+            <Card>
+              <Text style={styles.sectionTitle}>Select a Chapter</Text>
+              {renderChapterGrid()}
+            </Card>
+          </ScrollView>
+        )}
 
-      {viewMode === 'verses' && (
-        <FlatList
-          data={chapterVerses}
-          renderItem={renderVerseItem}
-          keyExtractor={(item) => `${item.book}-${item.chapter}-${item.verse}`}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <Text style={styles.chapterTitle}>
-              {selectedBook?.name} {selectedChapter}
-            </Text>
-          }
-        />
-      )}
+        {viewMode === 'verses' && (
+          <FlatList
+            data={chapterVerses}
+            renderItem={renderVerseItem}
+            keyExtractor={(item) => verseKey(item)}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <Text style={styles.chapterTitle}>
+                {selectedBook?.name} {selectedChapter}
+              </Text>
+            }
+          />
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -232,6 +351,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
+    minHeight: 44,
   },
   searchIcon: {
     fontSize: 16,
@@ -259,10 +379,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   filterButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.navy,
+    borderColor: Colors.navy,
   },
   filterButtonText: {
     ...Typography.bodySmall,
@@ -270,7 +392,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filterButtonTextActive: {
-    color: Colors.surface,
+    color: Colors.textOnDark,
   },
   breadcrumb: {
     flexDirection: 'row',
@@ -280,20 +402,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
+    minHeight: 48,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: Spacing.md,
+    minHeight: 44,
+    paddingRight: Spacing.sm,
   },
   backIcon: {
     fontSize: 20,
-    color: Colors.primary,
+    color: Colors.gold,
     marginRight: Spacing.xs,
   },
   backText: {
     ...Typography.body,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
   breadcrumbPath: {
@@ -302,10 +427,14 @@ const styles = StyleSheet.create({
   breadcrumbText: {
     ...Typography.bodySmall,
     fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  animatedContent: {
+    flex: 1,
   },
   listContent: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,
   },
   bookItem: {
     flexDirection: 'row',
@@ -314,6 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    minHeight: 56,
     ...Shadows.card,
   },
   bookInfo: {
@@ -328,16 +458,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   testamentBadge: {
-    paddingVertical: 2,
+    paddingVertical: 3,
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.sm,
     marginRight: Spacing.sm,
   },
   oldTestament: {
-    backgroundColor: '#F0E8DC',
+    backgroundColor: Colors.accentMuted,
   },
   newTestament: {
-    backgroundColor: '#E8F0E8',
+    backgroundColor: Colors.successLight,
   },
   testamentText: {
     fontSize: 11,
@@ -345,7 +475,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   oldTestamentText: {
-    color: Colors.primary,
+    color: Colors.gold,
   },
   newTestamentText: {
     color: Colors.success,
@@ -378,7 +508,7 @@ const styles = StyleSheet.create({
   chapterNumber: {
     ...Typography.body,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.navy,
   },
   chapterTitle: {
     ...Typography.h2,
@@ -399,9 +529,48 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 2,
   },
-  verseContent: {
-    ...Typography.body,
+  verseContentWrap: {
     flex: 1,
-    lineHeight: 26,
+  },
+  verseContent: {
+    fontSize: 17,
+    color: Colors.textPrimary,
+    lineHeight: 28,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  verseItemActions: {
+    flexDirection: 'row',
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  verseActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  verseActionIcon: {
+    fontSize: 14,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    ...Typography.h3,
+    marginBottom: Spacing.sm,
+  },
+  emptyMessage: {
+    ...Typography.bodySmall,
+    textAlign: 'center',
+    paddingHorizontal: Spacing.xl,
   },
 });

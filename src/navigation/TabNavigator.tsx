@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DailyScreen } from '../screens/DailyScreen';
 import { StreaksScreen } from '../screens/StreaksScreen';
 import { BibleScreen } from '../screens/BibleScreen';
+import { PlansScreen } from '../screens/PlansScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { Colors, Typography } from '../constants/theme';
 import { RootTabParamList } from '../types';
@@ -18,7 +19,7 @@ interface TabIconProps {
 function TabIcon({ emoji, focused }: TabIconProps) {
   return (
     <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-      <Text style={styles.icon}>{emoji}</Text>
+      <Text style={[styles.icon, focused && styles.iconActive]}>{emoji}</Text>
     </View>
   );
 }
@@ -27,18 +28,9 @@ export function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: Colors.background,
-          shadowColor: 'transparent',
-          elevation: 0,
-        },
-        headerTitleStyle: {
-          ...Typography.h3,
-          color: Colors.textPrimary,
-        },
+        headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.primary,
+        tabBarActiveTintColor: Colors.gold,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
       }}
@@ -47,8 +39,6 @@ export function TabNavigator() {
         name="Daily"
         component={DailyScreen}
         options={{
-          headerTitle: '',
-          headerTransparent: true,
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji={'\u2600\uFE0F'} focused={focused} />
           ),
@@ -58,8 +48,6 @@ export function TabNavigator() {
         name="Streaks"
         component={StreaksScreen}
         options={{
-          headerTitle: '',
-          headerTransparent: true,
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji={'\uD83D\uDD25'} focused={focused} />
           ),
@@ -69,10 +57,17 @@ export function TabNavigator() {
         name="Bible"
         component={BibleScreen}
         options={{
-          headerTitle: '',
-          headerTransparent: true,
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji={'\uD83D\uDCD6'} focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Plans"
+        component={PlansScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji={'\uD83D\uDCCB'} focused={focused} />
           ),
         }}
       />
@@ -80,8 +75,6 @@ export function TabNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          headerTitle: '',
-          headerTransparent: true,
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji={'\u2699\uFE0F'} focused={focused} />
           ),
@@ -93,29 +86,38 @@ export function TabNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.tabBarBg,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: Colors.tabBarBorder,
     paddingTop: 8,
-    paddingBottom: 4,
-    height: 88,
+    paddingBottom: Platform.OS === 'ios' ? 4 : 8,
+    height: Platform.OS === 'ios' ? 88 : 72,
+    elevation: 0,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     marginTop: 2,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : undefined,
   },
   iconContainer: {
-    width: 40,
+    width: 44,
     height: 32,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconContainerActive: {
-    backgroundColor: Colors.accentLight,
+    backgroundColor: Colors.accentMuted,
   },
   icon: {
     fontSize: 20,
+  },
+  iconActive: {
+    fontSize: 22,
   },
 });

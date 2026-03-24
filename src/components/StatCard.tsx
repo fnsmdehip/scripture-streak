@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Colors, BorderRadius, Spacing, Typography, Shadows } from '../constants/theme';
 
 interface StatCardProps {
@@ -29,12 +29,14 @@ const styles = StyleSheet.create({
     ...Shadows.card,
   },
   icon: {
-    fontSize: 24,
+    fontSize: 22,
     marginBottom: Spacing.xs,
   },
   value: {
-    ...Typography.stat,
-    fontSize: 28,
+    fontSize: 26,
+    fontWeight: '800',
+    color: Colors.navy,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
   },
   label: {
     ...Typography.statLabel,

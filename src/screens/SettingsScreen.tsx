@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius } from '../constants/theme';
 import { Card } from '../components/Card';
@@ -31,10 +33,12 @@ export function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showTranslationPicker, setShowTranslationPicker] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadSettings = useCallback(async () => {
     const data = await StorageService.getUserSettings();
     setSettings(data);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -46,6 +50,15 @@ export function SettingsScreen() {
     value: UserSettings[K]
   ) => {
     if (!settings) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    await StorageService.saveUserSettings(updated);
+  };
+
+  const handleToggle = async (key: 'streakReminders' | 'isPremium', value: boolean) => {
+    if (!settings) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const updated = { ...settings, [key]: value };
     setSettings(updated);
     await StorageService.saveUserSettings(updated);
@@ -61,11 +74,14 @@ export function SettingsScreen() {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            await StorageService.resetAllData();
             const defaultSettings: UserSettings = {
               notificationTime: '08:00',
               preferredTranslation: 'NIV',
               streakReminders: true,
               dailyGoalVerses: 1,
+              isPremium: false,
             };
             setSettings(defaultSettings);
             await StorageService.saveUserSettings(defaultSettings);
@@ -81,30 +97,127 @@ export function SettingsScreen() {
     return match ? match.label : value;
   };
 
-  if (!settings) return null;
+  if (loading || !settings) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={styles.content}>
+          <View style={styles.skeletonLine} />
+          <View style={[styles.skeletonLine, { width: '50%' }]} />
+          <View style={styles.skeletonCard} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + Spacing.md }]}
+      showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Customize your reading experience</Text>
+      <Text style={styles.subtitle}>Customize your experience</Text>
 
+      {/* Subscription */}
+      <Text style={styles.sectionHeader}>SUBSCRIPTION</Text>
+      <Card style={styles.sectionCard}>
+        <View style={styles.subscriptionRow}>
+          <View style={styles.subscriptionInfo}>
+            <View style={styles.subscriptionBadge}>
+              <Text style={styles.subscriptionBadgeText}>
+                {settings.isPremium ? 'PREMIUM' : 'FREE'}
+              </Text>
+            </View>
+            <Text style={styles.subscriptionDesc}>
+              {settings.isPremium
+                ? 'You have full access to all features'
+                : 'Upgrade for full Bible, unlimited bookmarks, and reading plans'}
+            </Text>
+          </View>
+        </View>
+        {!settings.isPremium && (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Alert.alert(
+                  'Upgrade to Premium',
+                  'Premium includes full Bible access, unlimited bookmarks, reading plans, and more for $19.99/year.',
+                  [
+                    { text: 'Maybe Later', style: 'cancel' },
+                    {
+                      text: 'Upgrade',
+                      onPress: () => handleToggle('isPremium', true),
+                    },
+                  ]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.upgradeButtonIcon}>{'\u2728'}</Text>
+              <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+              <Text style={styles.upgradePrice}>$19.99/yr</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {settings.isPremium && (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => {
+                Alert.alert(
+                  'Manage Subscription',
+                  'To manage your subscription, visit your device settings.',
+                  [{ text: 'OK' }]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Manage Subscription</Text>
+                <Text style={styles.settingDescription}>
+                  Change plan or cancel
+                </Text>
+              </View>
+              <Text style={styles.chevron}>{'\u203A'}</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => {
+                Alert.alert('Restore Purchases', 'Checking for previous purchases...');
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Restore Purchases</Text>
+                <Text style={styles.settingDescription}>
+                  Recover a previous subscription
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
+      </Card>
+
+      {/* Notifications */}
       <Text style={styles.sectionHeader}>NOTIFICATIONS</Text>
       <Card style={styles.sectionCard}>
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Streak Reminders</Text>
             <Text style={styles.settingDescription}>
-              Get a daily reminder to keep your streak alive
+              Get a daily reminder to read
             </Text>
           </View>
           <Switch
             value={settings.streakReminders}
-            onValueChange={(val) => updateSetting('streakReminders', val)}
-            trackColor={{ false: Colors.border, true: Colors.accentLight }}
-            thumbColor={settings.streakReminders ? Colors.primary : Colors.textMuted}
+            onValueChange={(val) => handleToggle('streakReminders', val)}
+            trackColor={{ false: Colors.border, true: Colors.goldLight }}
+            thumbColor={settings.streakReminders ? Colors.gold : Colors.textMuted}
           />
         </View>
 
@@ -125,7 +238,7 @@ export function SettingsScreen() {
             <Text style={styles.settingValueText}>
               {getTimeLabel(settings.notificationTime)}
             </Text>
-            <Text style={styles.chevron}>{showTimePicker ? '\u2303' : '\u2304'}</Text>
+            <Text style={styles.expandIcon}>{showTimePicker ? '\u2303' : '\u2304'}</Text>
           </View>
         </TouchableOpacity>
 
@@ -157,6 +270,7 @@ export function SettingsScreen() {
         )}
       </Card>
 
+      {/* Reading Preferences */}
       <Text style={styles.sectionHeader}>READING PREFERENCES</Text>
       <Card style={styles.sectionCard}>
         <TouchableOpacity
@@ -174,7 +288,7 @@ export function SettingsScreen() {
             <Text style={styles.settingValueText}>
               {settings.preferredTranslation}
             </Text>
-            <Text style={styles.chevron}>{showTranslationPicker ? '\u2303' : '\u2304'}</Text>
+            <Text style={styles.expandIcon}>{showTranslationPicker ? '\u2303' : '\u2304'}</Text>
           </View>
         </TouchableOpacity>
 
@@ -240,7 +354,8 @@ export function SettingsScreen() {
         </View>
       </Card>
 
-      <Text style={styles.sectionHeader}>DATA</Text>
+      {/* Data & Privacy */}
+      <Text style={styles.sectionHeader}>DATA & PRIVACY</Text>
       <Card style={styles.sectionCard}>
         <TouchableOpacity
           style={styles.settingRow}
@@ -258,9 +373,53 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </Card>
 
+      {/* About */}
+      <Text style={styles.sectionHeader}>ABOUT</Text>
+      <Card style={styles.sectionCard}>
+        <View style={styles.settingRow}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Version</Text>
+          </View>
+          <Text style={styles.versionText}>1.0.0</Text>
+        </View>
+        <View style={styles.divider} />
+        <TouchableOpacity
+          style={styles.settingRow}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Rate the App</Text>
+            <Text style={styles.settingDescription}>
+              Leave a review on the App Store
+            </Text>
+          </View>
+          <Text style={styles.chevron}>{'\u203A'}</Text>
+        </TouchableOpacity>
+        <View style={styles.divider} />
+        <TouchableOpacity
+          style={styles.settingRow}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Privacy Policy</Text>
+          </View>
+          <Text style={styles.chevron}>{'\u203A'}</Text>
+        </TouchableOpacity>
+        <View style={styles.divider} />
+        <TouchableOpacity
+          style={styles.settingRow}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Terms of Service</Text>
+          </View>
+          <Text style={styles.chevron}>{'\u203A'}</Text>
+        </TouchableOpacity>
+      </Card>
+
       <View style={styles.footer}>
         <Text style={styles.footerText}>Scripture Streak v1.0.0</Text>
-        <Text style={styles.footerText}>Made with love for daily devotion</Text>
+        <Text style={styles.footerText}>Build your daily Scripture habit</Text>
       </View>
     </ScrollView>
   );
@@ -273,7 +432,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,
   },
   title: {
     ...Typography.h1,
@@ -288,6 +447,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     marginTop: Spacing.md,
     paddingLeft: Spacing.xs,
+    color: Colors.textMuted,
   },
   sectionCard: {
     padding: 0,
@@ -297,6 +457,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
+    minHeight: 56,
   },
   settingInfo: {
     flex: 1,
@@ -318,11 +479,19 @@ const styles = StyleSheet.create({
   },
   settingValueText: {
     ...Typography.body,
-    color: Colors.primary,
+    color: Colors.gold,
     fontWeight: '600',
   },
-  chevron: {
+  expandIcon: {
     fontSize: 14,
+    color: Colors.textMuted,
+  },
+  chevron: {
+    fontSize: 20,
+    color: Colors.textMuted,
+  },
+  versionText: {
+    ...Typography.bodySmall,
     color: Colors.textMuted,
   },
   divider: {
@@ -344,17 +513,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   pickerItemActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
   },
   pickerItemText: {
     ...Typography.bodySmall,
     fontWeight: '600',
   },
   pickerItemTextActive: {
-    color: Colors.surface,
+    color: Colors.navy,
   },
   counterRow: {
     flexDirection: 'row',
@@ -362,9 +533,9 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   counterButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -374,13 +545,60 @@ const styles = StyleSheet.create({
   counterButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.primary,
+    color: Colors.navy,
     lineHeight: 20,
   },
   counterValue: {
     ...Typography.h3,
     minWidth: 24,
     textAlign: 'center',
+  },
+  // Subscription
+  subscriptionRow: {
+    padding: Spacing.md,
+  },
+  subscriptionInfo: {
+    flex: 1,
+  },
+  subscriptionBadge: {
+    backgroundColor: Colors.gold,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    alignSelf: 'flex-start',
+    marginBottom: Spacing.sm,
+  },
+  subscriptionBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.navy,
+    letterSpacing: 1,
+  },
+  subscriptionDesc: {
+    ...Typography.bodySmall,
+    lineHeight: 20,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    backgroundColor: Colors.accentMuted,
+    minHeight: 56,
+  },
+  upgradeButtonIcon: {
+    fontSize: 20,
+    marginRight: Spacing.sm,
+  },
+  upgradeButtonText: {
+    ...Typography.body,
+    fontWeight: '600',
+    color: Colors.gold,
+    flex: 1,
+  },
+  upgradePrice: {
+    ...Typography.bodySmall,
+    fontWeight: '700',
+    color: Colors.gold,
   },
   footer: {
     alignItems: 'center',
@@ -392,5 +610,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 2,
+  },
+  // Skeleton
+  skeletonLine: {
+    height: 20,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.md,
+    width: '60%',
+  },
+  skeletonCard: {
+    height: 120,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
   },
 });

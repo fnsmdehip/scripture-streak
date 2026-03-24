@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Animated,
+  Platform,
+  Share,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
 import { Card } from '../components/Card';
@@ -22,6 +27,12 @@ export function DailyScreen() {
   const [hasRead, setHasRead] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const checkAnim = useRef(new Animated.Value(0)).current;
+  const verseOpacity = useRef(new Animated.Value(0)).current;
+  const verseTranslateY = useRef(new Animated.Value(16)).current;
 
   const loadData = useCallback(async () => {
     const todayVerse = VerseService.getVerseOfTheDay();
@@ -32,6 +43,25 @@ export function DailyScreen() {
 
     const readToday = await StorageService.hasReadToday();
     setHasRead(readToday);
+    if (readToday) {
+      checkAnim.setValue(1);
+    }
+
+    setLoading(false);
+
+    // Animate verse in
+    Animated.parallel([
+      Animated.timing(verseOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(verseTranslateY, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   useEffect(() => {
@@ -45,13 +75,22 @@ export function DailyScreen() {
   }, [loadData]);
 
   const handleMarkAsRead = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const updated = await StorageService.recordReading();
     setStreak(updated);
     setHasRead(true);
+
+    Animated.spring(checkAnim, {
+      toValue: 1,
+      friction: 5,
+      tension: 80,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handleBookmark = async () => {
     if (!verse) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!bookmarked) {
       await StorageService.addBookmark({
         id: `${verse.book}-${verse.chapter}-${verse.verse}-${Date.now()}`,
@@ -62,12 +101,66 @@ export function DailyScreen() {
     setBookmarked(!bookmarked);
   };
 
+  const handleShare = async () => {
+    if (!verse) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const ref = VerseService.formatReference(verse);
+    const text = `\u201C${verse.text}\u201D\n\n\u2014 ${ref} (${verse.translation})\n\nShared via Scripture Streak`;
+
+    try {
+      if (Platform.OS === 'web') {
+        await Clipboard.setStringAsync(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        await Share.share({
+          message: text,
+        });
+      }
+    } catch {
+      await Clipboard.setStringAsync(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyVerse = async () => {
+    if (!verse) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const ref = VerseService.formatReference(verse);
+    const text = `\u201C${verse.text}\u201D \u2014 ${ref} (${verse.translation})`;
+    await Clipboard.setStringAsync(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const today = new Date();
   const dateString = today.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
   });
+
+  // Skeleton screens while loading
+  if (loading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={styles.content}>
+          <View style={styles.skeletonHeader}>
+            <View style={styles.skeletonLine} />
+            <View style={[styles.skeletonLine, { width: '50%' }]} />
+          </View>
+          <View style={styles.skeletonVerseCard}>
+            <View style={styles.skeletonLineSmall} />
+            <View style={styles.skeletonLineLarge} />
+            <View style={styles.skeletonLineLarge} />
+            <View style={[styles.skeletonLineLarge, { width: '60%' }]} />
+          </View>
+          <View style={styles.skeletonButton} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -77,10 +170,12 @@ export function DailyScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={Colors.primary}
+          tintColor={Colors.gold}
         />
       }
+      showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerText}>
@@ -91,55 +186,105 @@ export function DailyScreen() {
         </View>
       </View>
 
+      {/* Hero Verse Card */}
       {verse && (
-        <Card style={styles.verseCard} elevated>
-          <Text style={styles.verseLabel}>VERSE OF THE DAY</Text>
-          <View style={styles.verseDivider} />
-          <Text style={styles.verseText}>{`\u201C${verse.text}\u201D`}</Text>
-          <Text style={styles.verseRef}>
-            {VerseService.formatReference(verse)} ({verse.translation})
-          </Text>
-          <View style={styles.verseActions}>
-            <TouchableOpacity
-              style={styles.bookmarkButton}
-              onPress={handleBookmark}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.bookmarkIcon}>
-                {bookmarked ? '\uD83D\uDD16' : '\uD83D\uDCCC'}
-              </Text>
-              <Text style={styles.bookmarkText}>
-                {bookmarked ? 'Saved' : 'Bookmark'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
+        <Animated.View
+          style={{
+            opacity: verseOpacity,
+            transform: [{ translateY: verseTranslateY }],
+          }}
+        >
+          <Card style={styles.verseCard} elevated>
+            <Text style={styles.verseLabel}>VERSE OF THE DAY</Text>
+            <View style={styles.verseDivider} />
+            <Text style={styles.verseText}>
+              {'\u201C'}{verse.text}{'\u201D'}
+            </Text>
+            <Text style={styles.verseRef}>
+              {VerseService.formatReference(verse)} ({verse.translation})
+            </Text>
+            <View style={styles.verseActions}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleBookmark}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.actionIcon}>
+                  {bookmarked ? '\uD83D\uDD16' : '\uD83D\uDCCC'}
+                </Text>
+                <Text style={styles.actionLabel}>
+                  {bookmarked ? 'Saved' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.actionDivider} />
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleCopyVerse}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.actionIcon}>
+                  {copied ? '\u2705' : '\uD83D\uDCCB'}
+                </Text>
+                <Text style={styles.actionLabel}>
+                  {copied ? 'Copied' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.actionDivider} />
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleShare}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.actionIcon}>{'\uD83D\uDCE4'}</Text>
+                <Text style={styles.actionLabel}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
+        </Animated.View>
       )}
 
+      {/* Mark as Read */}
       {!hasRead ? (
         <TouchableOpacity
           style={styles.readButton}
           onPress={handleMarkAsRead}
           activeOpacity={0.8}
         >
-          <Text style={styles.readButtonIcon}>{'\u2714\uFE0F'}</Text>
-          <Text style={styles.readButtonText}>Mark Today as Read</Text>
-          <Text style={styles.readButtonSub}>
-            Keep your streak alive!
-          </Text>
+          <View style={styles.readButtonContent}>
+            <Text style={styles.readButtonIcon}>{'\u2714\uFE0F'}</Text>
+            <View>
+              <Text style={styles.readButtonText}>Mark Today as Read</Text>
+              <Text style={styles.readButtonSub}>Keep your streak alive</Text>
+            </View>
+          </View>
         </TouchableOpacity>
       ) : (
-        <Card style={styles.completedCard}>
-          <Text style={styles.completedIcon}>{'\u2705'}</Text>
-          <Text style={styles.completedText}>
-            You have completed today's reading
-          </Text>
+        <Animated.View
+          style={[
+            styles.completedCard,
+            {
+              transform: [{ scale: checkAnim }],
+            },
+          ]}
+        >
+          <View style={styles.completedCircle}>
+            <Text style={styles.completedIcon}>{'\u2705'}</Text>
+          </View>
+          <Text style={styles.completedText}>Today's reading complete</Text>
           <Text style={styles.completedSub}>
             Come back tomorrow to continue your streak
           </Text>
-        </Card>
+        </Animated.View>
       )}
 
+      {/* Quick Stats */}
       {streak && (
         <View style={styles.quickStats}>
           <View style={styles.quickStatItem}>
@@ -153,11 +298,21 @@ export function DailyScreen() {
           </View>
           <View style={styles.quickStatDivider} />
           <View style={styles.quickStatItem}>
-            <Text style={styles.quickStatValue}>{streak.currentStreak}</Text>
+            <Text style={[styles.quickStatValue, { color: Colors.gold }]}>
+              {streak.currentStreak}
+            </Text>
             <Text style={styles.quickStatLabel}>Current</Text>
           </View>
         </View>
       )}
+
+      {/* Encouraging message */}
+      <View style={styles.encourageCard}>
+        <Text style={styles.encourageIcon}>{'\uD83D\uDCAB'}</Text>
+        <Text style={styles.encourageText}>
+          {getEncouragingMessage(streak?.currentStreak ?? 0)}
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -169,6 +324,15 @@ function getTimeOfDay(): string {
   return 'Evening';
 }
 
+function getEncouragingMessage(streak: number): string {
+  if (streak === 0) return 'Start your journey today. Every great habit begins with a single step.';
+  if (streak === 1) return 'Day one in the books. Tomorrow will make two. You\'ve got this.';
+  if (streak < 7) return `${streak} days strong. You're building something beautiful.`;
+  if (streak < 30) return `${streak} days of faithfulness. Your consistency is inspiring.`;
+  if (streak < 100) return `${streak} days! You're proving that devotion is a daily choice.`;
+  return `${streak} days of Scripture. You are a shining example of faithfulness.`;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -176,7 +340,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,
   },
   header: {
     marginBottom: Spacing.lg,
@@ -195,33 +359,42 @@ const styles = StyleSheet.create({
   },
   date: {
     ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   verseCard: {
     marginBottom: Spacing.lg,
     paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.goldMuted,
   },
   verseLabel: {
     ...Typography.caption,
-    color: Colors.accent,
-    marginBottom: Spacing.sm,
+    color: Colors.gold,
     textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
   verseDivider: {
     width: 40,
     height: 2,
-    backgroundColor: Colors.accentLight,
+    backgroundColor: Colors.gold,
     alignSelf: 'center',
     marginBottom: Spacing.lg,
+    opacity: 0.5,
   },
   verseText: {
-    ...Typography.verseText,
+    fontSize: 22,
+    color: Colors.textPrimary,
     textAlign: 'center',
+    lineHeight: 36,
     marginBottom: Spacing.lg,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontStyle: 'italic',
   },
   verseRef: {
     ...Typography.verseRef,
     textAlign: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   verseActions: {
     flexDirection: 'row',
@@ -230,50 +403,78 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.borderLight,
     paddingTop: Spacing.md,
   },
-  bookmarkButton: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
+    minHeight: 44,
   },
-  bookmarkIcon: {
+  actionIcon: {
     fontSize: 16,
     marginRight: Spacing.xs,
   },
-  bookmarkText: {
+  actionLabel: {
     ...Typography.bodySmall,
     color: Colors.primary,
     fontWeight: '600',
+    fontSize: 13,
+  },
+  actionDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: Colors.borderLight,
+    alignSelf: 'center',
   },
   readButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.navy,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  readButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readButtonIcon: {
+    fontSize: 24,
+    marginRight: Spacing.md,
+  },
+  readButtonText: {
+    ...Typography.button,
+    color: Colors.textOnDark,
+  },
+  readButtonSub: {
+    fontSize: 13,
+    color: '#FFFFFF88',
+    marginTop: 2,
+  },
+  completedCard: {
+    backgroundColor: Colors.successLight,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     alignItems: 'center',
     marginBottom: Spacing.lg,
-    ...Shadows.elevated,
+    borderWidth: 1,
+    borderColor: '#4CAF5030',
   },
-  readButtonIcon: {
-    fontSize: 28,
-    marginBottom: Spacing.sm,
-  },
-  readButtonText: {
-    ...Typography.h3,
-    color: Colors.surface,
-    marginBottom: Spacing.xs,
-  },
-  readButtonSub: {
-    ...Typography.bodySmall,
-    color: Colors.accentLight,
-  },
-  completedCard: {
+  completedCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
-    backgroundColor: '#F5FAF0',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
   },
   completedIcon: {
-    fontSize: 32,
-    marginBottom: Spacing.sm,
+    fontSize: 24,
   },
   completedText: {
     ...Typography.h3,
@@ -283,12 +484,14 @@ const styles = StyleSheet.create({
   completedSub: {
     ...Typography.bodySmall,
     textAlign: 'center',
+    color: Colors.textSecondary,
   },
   quickStats: {
     flexDirection: 'row',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
+    marginBottom: Spacing.lg,
     ...Shadows.card,
   },
   quickStatItem: {
@@ -301,12 +504,71 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.xs,
   },
   quickStatValue: {
-    ...Typography.h2,
-    color: Colors.primary,
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.navy,
     marginBottom: 2,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
   },
   quickStatLabel: {
     ...Typography.caption,
     fontSize: 10,
+  },
+  encourageCard: {
+    backgroundColor: Colors.accentMuted,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  encourageIcon: {
+    fontSize: 20,
+    marginRight: Spacing.sm,
+  },
+  encourageText: {
+    ...Typography.bodySmall,
+    flex: 1,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  // Skeleton styles
+  skeletonHeader: {
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.lg,
+  },
+  skeletonLine: {
+    height: 20,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.sm,
+    width: '70%',
+  },
+  skeletonLineSmall: {
+    height: 12,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.md,
+    width: '40%',
+    alignSelf: 'center',
+  },
+  skeletonLineLarge: {
+    height: 16,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.sm,
+    width: '90%',
+    alignSelf: 'center',
+  },
+  skeletonVerseCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    ...Shadows.card,
+  },
+  skeletonButton: {
+    height: 56,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.lg,
   },
 });

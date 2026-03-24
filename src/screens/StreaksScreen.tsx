@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Animated,
+  Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
 import { Card } from '../components/Card';
@@ -21,10 +24,41 @@ export function StreaksScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const ringScale = useRef(new Animated.Value(0)).current;
+  const ringRotate = useRef(new Animated.Value(0)).current;
+  const numberScale = useRef(new Animated.Value(0)).current;
 
   const loadData = useCallback(async () => {
     const data = await StorageService.getStreakData();
     setStreak(data);
+    setLoading(false);
+
+    // Animate streak ring
+    Animated.sequence([
+      Animated.spring(ringScale, {
+        toValue: 1,
+        friction: 6,
+        tension: 60,
+        useNativeDriver: true,
+      }),
+      Animated.spring(numberScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Continuous slow glow rotation
+    Animated.loop(
+      Animated.timing(ringRotate, {
+        toValue: 1,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
   }, []);
 
   useEffect(() => {
@@ -38,6 +72,7 @@ export function StreaksScreen() {
   }, [loadData]);
 
   const goToPreviousMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (currentMonth === 0) {
       setCurrentMonth(11);
       setCurrentYear(currentYear - 1);
@@ -47,6 +82,7 @@ export function StreaksScreen() {
   };
 
   const goToNextMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (currentMonth === 11) {
       setCurrentMonth(0);
       setCurrentYear(currentYear + 1);
@@ -78,6 +114,38 @@ export function StreaksScreen() {
     return Math.round((recentDays / 30) * 100);
   };
 
+  const getStreakEmoji = (count: number): string => {
+    if (count >= 100) return '\uD83D\uDC51';
+    if (count >= 30) return '\uD83D\uDD25';
+    if (count >= 7) return '\u2B50';
+    if (count > 0) return '\uD83C\uDF31';
+    return '\uD83C\uDF3F';
+  };
+
+  const getStreakMessage = (count: number): string => {
+    if (count >= 100) return 'Legendary dedication!';
+    if (count >= 30) return 'On fire! Incredible faithfulness!';
+    if (count >= 7) return 'One week strong!';
+    if (count > 0) return 'Great start! Keep growing!';
+    return 'Start reading today to begin your streak';
+  };
+
+  const rotateInterpolation = ringRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + Spacing.md }]}>
+        <View style={styles.content}>
+          <View style={styles.skeletonCircle} />
+          <View style={[styles.skeletonLine, { width: '50%', alignSelf: 'center' }]} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -86,69 +154,93 @@ export function StreaksScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={Colors.primary}
+          tintColor={Colors.gold}
         />
       }
+      showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Your Streaks</Text>
-      <Text style={styles.subtitle}>Track your daily scripture reading journey</Text>
+      <Text style={styles.subtitle}>Track your daily Scripture journey</Text>
 
       {streak && (
         <>
-          <View style={styles.streakHighlight}>
-            <View style={styles.streakCircle}>
-              <Text style={styles.streakEmoji}>
-                {streak.currentStreak >= 7 ? '\uD83D\uDD25' : streak.currentStreak > 0 ? '\u2B50' : '\uD83C\uDF31'}
-              </Text>
-              <Text style={styles.streakNumber}>{streak.currentStreak}</Text>
-              <Text style={styles.streakLabel}>Day Streak</Text>
-            </View>
-            {streak.currentStreak >= 7 && (
-              <Text style={styles.streakMessage}>
-                Amazing! You are on fire!
-              </Text>
-            )}
-            {streak.currentStreak > 0 && streak.currentStreak < 7 && (
-              <Text style={styles.streakMessage}>
-                Great start! Keep it going!
-              </Text>
-            )}
-            {streak.currentStreak === 0 && (
-              <Text style={styles.streakMessage}>
-                Start reading today to begin your streak
-              </Text>
-            )}
+          {/* Hero Streak Display */}
+          <View style={styles.streakHero}>
+            <Animated.View
+              style={[
+                styles.streakRingOuter,
+                {
+                  transform: [{ scale: ringScale }],
+                },
+              ]}
+            >
+              <Animated.View
+                style={[
+                  styles.streakRingGlow,
+                  {
+                    transform: [{ rotate: rotateInterpolation }],
+                  },
+                ]}
+              />
+              <View style={styles.streakRingInner}>
+                <Text style={styles.streakEmoji}>{getStreakEmoji(streak.currentStreak)}</Text>
+                <Animated.Text
+                  style={[
+                    styles.streakNumber,
+                    { transform: [{ scale: numberScale }] },
+                  ]}
+                >
+                  {streak.currentStreak}
+                </Animated.Text>
+                <Text style={styles.streakLabel}>
+                  {streak.currentStreak === 1 ? 'DAY' : 'DAYS'}
+                </Text>
+              </View>
+            </Animated.View>
+            <Text style={styles.streakMessage}>
+              {getStreakMessage(streak.currentStreak)}
+            </Text>
           </View>
 
+          {/* Stats Row */}
           <View style={styles.statsRow}>
             <StatCard
               value={streak.longestStreak}
               label="Best Streak"
               icon={'\uD83C\uDFC6'}
-              color={Colors.streakGold}
+              color={Colors.gold}
             />
             <View style={styles.statSpacer} />
             <StatCard
               value={streak.totalDaysRead}
               label="Total Days"
               icon={'\uD83D\uDCD6'}
-              color={Colors.success}
+              color={Colors.navy}
             />
             <View style={styles.statSpacer} />
             <StatCard
               value={getWeeklyAverage()}
               label="Weekly Avg"
               icon={'\uD83D\uDCCA'}
-              color={Colors.primary}
+              color={Colors.primaryLight}
             />
           </View>
 
+          {/* Calendar */}
           <Card style={styles.calendarCard}>
             <View style={styles.calendarNav}>
-              <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+              <TouchableOpacity
+                onPress={goToPreviousMonth}
+                style={styles.navButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Text style={styles.navButtonText}>{'\u2039'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+              <TouchableOpacity
+                onPress={goToNextMonth}
+                style={styles.navButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Text style={styles.navButtonText}>{'\u203A'}</Text>
               </TouchableOpacity>
             </View>
@@ -159,17 +251,18 @@ export function StreaksScreen() {
             />
             <View style={styles.calendarFooter}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors.calendarActive }]} />
+                <View style={[styles.legendDot, { backgroundColor: Colors.gold }]} />
                 <Text style={styles.legendText}>Read</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { borderWidth: 2, borderColor: Colors.calendarToday }]} />
+                <View style={[styles.legendDot, { borderWidth: 2, borderColor: Colors.navy }]} />
                 <Text style={styles.legendText}>Today</Text>
               </View>
               <Text style={styles.monthCount}>{thisMonthDays} days this month</Text>
             </View>
           </Card>
 
+          {/* Consistency */}
           <Card style={styles.consistencyCard}>
             <Text style={styles.consistencyTitle}>30-Day Consistency</Text>
             <View style={styles.progressBarOuter}>
@@ -178,6 +271,37 @@ export function StreaksScreen() {
               />
             </View>
             <Text style={styles.consistencyScore}>{getConsistencyScore()}%</Text>
+          </Card>
+
+          {/* Milestone badges */}
+          <Card style={styles.milestonesCard}>
+            <Text style={styles.milestonesTitle}>Milestones</Text>
+            <View style={styles.milestoneGrid}>
+              {[
+                { days: 7, emoji: '\u2B50', label: '1 Week' },
+                { days: 30, emoji: '\uD83D\uDD25', label: '1 Month' },
+                { days: 100, emoji: '\uD83D\uDC8E', label: '100 Days' },
+                { days: 365, emoji: '\uD83D\uDC51', label: '1 Year' },
+              ].map((m) => {
+                const achieved = streak.totalDaysRead >= m.days;
+                return (
+                  <View
+                    key={m.days}
+                    style={[
+                      styles.milestoneItem,
+                      !achieved && styles.milestoneItemLocked,
+                    ]}
+                  >
+                    <Text style={[styles.milestoneEmoji, !achieved && { opacity: 0.3 }]}>
+                      {achieved ? m.emoji : '\uD83D\uDD12'}
+                    </Text>
+                    <Text style={[styles.milestoneLabel, !achieved && { opacity: 0.4 }]}>
+                      {m.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           </Card>
         </>
       )}
@@ -192,7 +316,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,
   },
   title: {
     ...Typography.h1,
@@ -202,39 +326,65 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     marginBottom: Spacing.lg,
   },
-  streakHighlight: {
+  streakHero: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.xl,
+    paddingVertical: Spacing.md,
   },
-  streakCircle: {
+  streakRingOuter: {
+    width: 160,
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  streakRingGlow: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 3,
+    borderColor: Colors.gold,
+    borderTopColor: 'transparent',
+    borderRightColor: Colors.goldLight,
+  },
+  streakRingInner: {
     width: 140,
     height: 140,
     borderRadius: 70,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.elevated,
-    borderWidth: 3,
-    borderColor: Colors.accentLight,
+    shadowColor: Colors.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: Colors.goldMuted,
   },
   streakEmoji: {
-    fontSize: 32,
+    fontSize: 28,
+    marginBottom: 2,
   },
   streakNumber: {
-    ...Typography.stat,
-    fontSize: 42,
-    lineHeight: 48,
+    fontSize: 48,
+    fontWeight: '800',
+    color: Colors.gold,
+    lineHeight: 52,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
   },
   streakLabel: {
-    ...Typography.caption,
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 2,
   },
   streakMessage: {
     ...Typography.body,
-    color: Colors.primary,
-    marginTop: Spacing.md,
+    color: Colors.gold,
     fontWeight: '600',
+    textAlign: 'center',
   },
   statsRow: {
     flexDirection: 'row',
@@ -256,16 +406,16 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   navButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   navButtonText: {
     fontSize: 24,
-    color: Colors.primary,
+    color: Colors.navy,
     fontWeight: '600',
     lineHeight: 28,
   },
@@ -297,6 +447,7 @@ const styles = StyleSheet.create({
   },
   consistencyCard: {
     alignItems: 'center',
+    marginBottom: Spacing.lg,
   },
   consistencyTitle: {
     ...Typography.h3,
@@ -312,11 +463,53 @@ const styles = StyleSheet.create({
   },
   progressBarInner: {
     height: '100%',
-    backgroundColor: Colors.success,
+    backgroundColor: Colors.gold,
     borderRadius: BorderRadius.full,
   },
   consistencyScore: {
     ...Typography.h2,
-    color: Colors.success,
+    color: Colors.gold,
+  },
+  milestonesCard: {
+    marginBottom: Spacing.lg,
+  },
+  milestonesTitle: {
+    ...Typography.h3,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  milestoneGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  milestoneItem: {
+    alignItems: 'center',
+    padding: Spacing.sm,
+  },
+  milestoneItemLocked: {
+    opacity: 0.5,
+  },
+  milestoneEmoji: {
+    fontSize: 32,
+    marginBottom: Spacing.xs,
+  },
+  milestoneLabel: {
+    ...Typography.caption,
+    fontSize: 10,
+  },
+  // Skeleton
+  skeletonCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: Colors.borderLight,
+    alignSelf: 'center',
+    marginVertical: Spacing.xl,
+  },
+  skeletonLine: {
+    height: 16,
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.md,
   },
 });

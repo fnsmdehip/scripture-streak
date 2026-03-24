@@ -8,16 +8,21 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "backgroundColor": "#FFFBF5",
+      "backgroundColor": "#1A1A2E",
       "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.scripturestreak.app"
+      "bundleIdentifier": "com.scripturestreak.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FFFBF5"
+        "backgroundColor": "#1A1A2E"
       },
       "package": "com.scripturestreak.app"
     },
@@ -25,7 +30,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#E2B53F"
+        }
+      ]
     ]
   }
 }

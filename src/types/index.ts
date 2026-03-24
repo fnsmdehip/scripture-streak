@@ -33,6 +33,34 @@ export interface UserSettings {
   preferredTranslation: string;
   streakReminders: boolean;
   dailyGoalVerses: number;
+  isPremium: boolean;
+}
+
+export interface OnboardingState {
+  completed: boolean;
+  translation: string;
+  dailyGoal: 'verse' | 'chapter' | 'custom';
+  customGoalCount: number;
+  notificationTime: string;
+  notificationsEnabled: boolean;
+}
+
+export interface ReadingPlan {
+  id: string;
+  title: string;
+  description: string;
+  book: string;
+  totalChapters: number;
+  durationDays: number;
+  icon: string;
+}
+
+export interface ReadingPlanProgress {
+  planId: string;
+  startDate: string;
+  completedDays: string[];
+  currentDay: number;
+  lastReadDate: string | null;
 }
 
 export interface BibleBook {
@@ -52,6 +80,7 @@ export type RootTabParamList = {
   Daily: undefined;
   Streaks: undefined;
   Bible: undefined;
+  Plans: undefined;
   Settings: undefined;
 };
 
@@ -59,3 +88,9 @@ export type BibleStackParamList = {
   BibleHome: undefined;
   ChapterView: { book: string; chapter: number };
 };
+
+export type AppScreen =
+  | 'splash'
+  | 'onboarding'
+  | 'paywall'
+  | 'main';

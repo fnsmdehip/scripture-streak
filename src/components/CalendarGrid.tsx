@@ -71,6 +71,8 @@ export function CalendarGrid({ readDates, month, year }: CalendarGridProps) {
                   >
                     {cell.day}
                   </Text>
+                  {/* Gold dot indicator for read days */}
+                  {cell.isRead && <View style={styles.goldDot} />}
                 </View>
               ) : (
                 <View style={styles.dayCircle} />
@@ -112,20 +114,26 @@ const styles = StyleSheet.create({
   dayLabel: {
     ...Typography.caption,
     fontSize: 11,
+    color: Colors.textMuted,
   },
   dayCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayCircleRead: {
-    backgroundColor: Colors.calendarActive,
+    backgroundColor: Colors.gold,
+    shadowColor: Colors.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   dayCircleToday: {
     borderWidth: 2,
-    borderColor: Colors.calendarToday,
+    borderColor: Colors.navy,
   },
   dayText: {
     fontSize: 14,
@@ -133,11 +141,20 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   dayTextRead: {
-    color: Colors.surface,
+    color: Colors.navy,
     fontWeight: '700',
   },
   dayTextToday: {
-    color: Colors.primary,
+    color: Colors.navy,
     fontWeight: '700',
+  },
+  goldDot: {
+    position: 'absolute',
+    bottom: 1,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.navy,
+    opacity: 0.5,
   },
 });
