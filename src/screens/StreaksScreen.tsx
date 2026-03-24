@@ -18,10 +18,12 @@ import { CalendarGrid } from '../components/CalendarGrid';
 import { StatCard } from '../components/StatCard';
 import { StorageService } from '../services/storage';
 import { StreakData } from '../types';
+import { StreakIntelligence, StreakStats } from '../services/streakIntelligence';
 
 export function StreaksScreen() {
   const insets = useSafeAreaInsets();
   const [streak, setStreak] = useState<StreakData | null>(null);
+  const [stats, setStats] = useState<StreakStats | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [refreshing, setRefreshing] = useState(false);
@@ -34,6 +36,7 @@ export function StreaksScreen() {
   const loadData = useCallback(async () => {
     const data = await StorageService.getStreakData();
     setStreak(data);
+    setStats(StreakIntelligence.calculateStats(data));
     setLoading(false);
 
     // Animate streak ring
@@ -232,12 +235,38 @@ export function StreaksScreen() {
             />
             <View style={styles.statSpacer} />
             <StatCard
-              value={getWeeklyAverage()}
+              value={stats?.averagePerWeek ?? 0}
               label="Weekly Avg"
               iconName="bar-chart"
               color={Colors.primaryLight}
             />
           </View>
+
+          {/* Extended Stats */}
+          {stats && (
+            <View style={styles.statsRow}>
+              <StatCard
+                value={stats.daysThisWeek}
+                label="This Week"
+                iconName="calendar"
+                color={Colors.success}
+              />
+              <View style={styles.statSpacer} />
+              <StatCard
+                value={stats.daysThisMonth}
+                label="This Month"
+                iconName="calendar-outline"
+                color={Colors.gold}
+              />
+              <View style={styles.statSpacer} />
+              <StatCard
+                value={stats.daysThisYear}
+                label="This Year"
+                iconName="ribbon"
+                color={Colors.streakFire}
+              />
+            </View>
+          )}
 
           {/* Calendar */}
           <Card style={styles.calendarCard}>
@@ -280,45 +309,88 @@ export function StreaksScreen() {
             <Text style={styles.consistencyTitle}>30-Day Consistency</Text>
             <View style={styles.progressBarOuter}>
               <View
-                style={[styles.progressBarInner, { width: `${getConsistencyScore()}%` }]}
+                style={[styles.progressBarInner, { width: `${stats?.consistencyLast30 ?? 0}%` }]}
               />
             </View>
-            <Text style={styles.consistencyScore}>{getConsistencyScore()}%</Text>
+            <Text style={styles.consistencyScore}>{stats?.consistencyLast30 ?? 0}%</Text>
           </Card>
+
+          {/* Reading Insights */}
+          {stats && stats.totalDaysRead > 0 && (
+            <Card style={styles.consistencyCard}>
+              <Text style={styles.consistencyTitle}>Reading Insights</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm }}>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={[styles.consistencyScore, { fontSize: 18 }]}>{stats.mostReadDayOfWeek}</Text>
+                  <Text style={styles.milestoneLabel}>MOST ACTIVE DAY</Text>
+                </View>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={[styles.consistencyScore, { fontSize: 18 }]}>{stats.estimatedReadingMinutes}m</Text>
+                  <Text style={styles.milestoneLabel}>EST. READING TIME</Text>
+                </View>
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Ionicons
+                    name={stats.weeklyTrend === 'up' ? 'trending-up' : stats.weeklyTrend === 'down' ? 'trending-down' : 'remove'}
+                    size={22}
+                    color={stats.weeklyTrend === 'up' ? Colors.success : stats.weeklyTrend === 'down' ? Colors.streakFire : Colors.textMuted}
+                  />
+                  <Text style={styles.milestoneLabel}>WEEKLY TREND</Text>
+                </View>
+              </View>
+            </Card>
+          )}
 
           {/* Milestone badges */}
           <Card style={styles.milestonesCard}>
             <Text style={styles.milestonesTitle}>Milestones</Text>
             <View style={styles.milestoneGrid}>
-              {[
-                { days: 7, iconName: 'star', label: '1 Week', color: Colors.gold },
-                { days: 30, iconName: 'flame', label: '1 Month', color: Colors.streakFire },
-                { days: 100, iconName: 'diamond', label: '100 Days', color: Colors.primaryLight },
-                { days: 365, iconName: 'trophy', label: '1 Year', color: Colors.gold },
-              ].map((m) => {
-                const achieved = streak.totalDaysRead >= m.days;
-                return (
-                  <View
-                    key={m.days}
-                    style={[
-                      styles.milestoneItem,
-                      !achieved && styles.milestoneItemLocked,
-                    ]}
-                  >
-                    <Ionicons
-                      name={(achieved ? m.iconName : 'lock-closed') as any}
-                      size={32}
-                      color={achieved ? m.color : Colors.textMuted}
-                      style={[!achieved && { opacity: 0.3 }]}
-                    />
-                    <Text style={[styles.milestoneLabel, !achieved && { opacity: 0.4 }]}>
-                      {m.label}
-                    </Text>
-                  </View>
-                );
-              })}
+              {StreakIntelligence.getMilestones(streak.totalDaysRead).map((m) => (
+                <View
+                  key={m.days}
+                  style={[
+                    styles.milestoneItem,
+                    !m.achieved && styles.milestoneItemLocked,
+                  ]}
+                >
+                  <Ionicons
+                    name={(m.achieved ? m.icon : 'lock-closed') as any}
+                    size={32}
+                    color={m.achieved ? m.color : Colors.textMuted}
+                    style={[!m.achieved && { opacity: 0.3 }]}
+                  />
+                  <Text style={[styles.milestoneLabel, !m.achieved && { opacity: 0.4 }]}>
+                    {m.label}
+                  </Text>
+                  <Text style={[styles.milestoneLabel, { fontSize: 9, marginTop: 2 }, !m.achieved && { opacity: 0.4 }]}>
+                    {m.achieved ? m.tier.toUpperCase() : `${m.days - streak.totalDaysRead} to go`}
+                  </Text>
+                </View>
+              ))}
             </View>
           </Card>
+
+          {/* Encouraging message based on streak intelligence */}
+          <View style={{
+            backgroundColor: Colors.accentMuted,
+            borderRadius: BorderRadius.lg,
+            padding: Spacing.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: 'rgba(0,0,0,0.06)',
+          }}>
+            <Ionicons name="sparkles" size={20} color={Colors.gold} style={{ marginRight: Spacing.sm }} />
+            <Text style={{
+              ...Typography.bodySmall,
+              flex: 1,
+              color: Colors.textSecondary,
+              fontStyle: 'italic',
+              fontWeight: '300',
+              lineHeight: 24,
+            }}>
+              {StreakIntelligence.getEncouragingMessage(streak)}
+            </Text>
+          </View>
         </>
       )}
     </ScrollView>

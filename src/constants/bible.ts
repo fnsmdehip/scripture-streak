@@ -69,39 +69,10 @@ export const BIBLE_BOOKS: BibleBook[] = [
   { name: 'Revelation', chapters: 22, testament: 'new' },
 ];
 
-export const DAILY_VERSES: Verse[] = [
-  { book: 'Psalms', chapter: 46, verse: 10, text: 'Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth.', translation: 'NIV' },
-  { book: 'Proverbs', chapter: 3, verse: 5, text: 'Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.', translation: 'NIV' },
-  { book: 'Philippians', chapter: 4, verse: 13, text: 'I can do all things through him who strengthens me.', translation: 'ESV' },
-  { book: 'Isaiah', chapter: 41, verse: 10, text: 'So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.', translation: 'NIV' },
-  { book: 'Romans', chapter: 8, verse: 28, text: 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.', translation: 'NIV' },
-  { book: 'Jeremiah', chapter: 29, verse: 11, text: 'For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.', translation: 'NIV' },
-  { book: 'Joshua', chapter: 1, verse: 9, text: 'Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 23, verse: 1, text: 'The Lord is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters, he refreshes my soul.', translation: 'NIV' },
-  { book: 'Matthew', chapter: 11, verse: 28, text: 'Come to me, all you who are weary and burdened, and I will give you rest.', translation: 'NIV' },
-  { book: 'John', chapter: 3, verse: 16, text: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.', translation: 'NIV' },
-  { book: '2 Timothy', chapter: 1, verse: 7, text: 'For the Spirit God gave us does not make us timid, but gives us power, love and self-discipline.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 119, verse: 105, text: 'Your word is a lamp for my feet, a light on my path.', translation: 'NIV' },
-  { book: 'Romans', chapter: 12, verse: 2, text: 'Do not conform to the pattern of this world, but be transformed by the renewing of your mind.', translation: 'NIV' },
-  { book: 'Ephesians', chapter: 2, verse: 8, text: 'For it is by grace you have been saved, through faith\u2014and this is not from yourselves, it is the gift of God.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 27, verse: 1, text: 'The Lord is my light and my salvation\u2014whom shall I fear? The Lord is the stronghold of my life\u2014of whom shall I be afraid?', translation: 'NIV' },
-  { book: 'Hebrews', chapter: 11, verse: 1, text: 'Now faith is confidence in what we hope for and assurance about what we do not see.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 37, verse: 4, text: 'Take delight in the Lord, and he will give you the desires of your heart.', translation: 'NIV' },
-  { book: 'Galatians', chapter: 5, verse: 22, text: 'But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness, gentleness and self-control.', translation: 'NIV' },
-  { book: '1 Corinthians', chapter: 13, verse: 4, text: 'Love is patient, love is kind. It does not envy, it does not boast, it is not proud.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 91, verse: 1, text: 'Whoever dwells in the shelter of the Most High will rest in the shadow of the Almighty.', translation: 'NIV' },
-  { book: 'Isaiah', chapter: 40, verse: 31, text: 'But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.', translation: 'NIV' },
-  { book: 'Lamentations', chapter: 3, verse: 22, text: 'Because of the Lord\u2019s great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.', translation: 'NIV' },
-  { book: 'Colossians', chapter: 3, verse: 23, text: 'Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 139, verse: 14, text: 'I praise you because I am fearfully and wonderfully made; your works are wonderful, I know that full well.', translation: 'NIV' },
-  { book: 'James', chapter: 1, verse: 5, text: 'If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you.', translation: 'NIV' },
-  { book: 'Proverbs', chapter: 16, verse: 3, text: 'Commit to the Lord whatever you do, and he will establish your plans.', translation: 'NIV' },
-  { book: 'Matthew', chapter: 6, verse: 33, text: 'But seek first his kingdom and his righteousness, and all these things will be given to you as well.', translation: 'NIV' },
-  { book: '1 Peter', chapter: 5, verse: 7, text: 'Cast all your anxiety on him because he cares for you.', translation: 'NIV' },
-  { book: 'Psalms', chapter: 34, verse: 8, text: 'Taste and see that the Lord is good; blessed is the one who takes refuge in him.', translation: 'NIV' },
-  { book: 'Deuteronomy', chapter: 31, verse: 6, text: 'Be strong and courageous. Do not be afraid or terrified because of them, for the Lord your God goes with you; he will never leave you nor forsake you.', translation: 'NIV' },
-  { book: 'Philippians', chapter: 4, verse: 6, text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.', translation: 'NIV' },
-];
+// Daily verses are now in src/data/verses.ts (365 KJV verses).
+// This re-export keeps backward compatibility.
+import { DAILY_VERSES_KJV } from '../data/verses';
+export const DAILY_VERSES = DAILY_VERSES_KJV;
 
 export const TRANSLATIONS = ['NIV', 'ESV', 'KJV', 'NLT', 'NASB', 'MSG'] as const;
 

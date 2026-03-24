@@ -21,6 +21,7 @@ import { StreakBadge } from '../components/StreakBadge';
 import { StorageService } from '../services/storage';
 import { VerseService } from '../services/verse';
 import { StreakData, Verse } from '../types';
+import { StreakIntelligence } from '../services/streakIntelligence';
 
 export function DailyScreen() {
   const insets = useSafeAreaInsets();
@@ -124,8 +125,7 @@ export function DailyScreen() {
   const handleShare = async () => {
     if (!verse) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const ref = VerseService.formatReference(verse);
-    const text = `\u201C${verse.text}\u201D\n\n\u2014 ${ref} (${verse.translation})\n\nShared via Scripture Streak`;
+    const text = VerseService.formatForSharing(verse);
 
     try {
       if (Platform.OS === 'web') {
@@ -346,7 +346,7 @@ export function DailyScreen() {
       <View style={styles.encourageCard}>
         <Ionicons name="sparkles" size={20} color={Colors.gold} style={{ marginRight: Spacing.sm }} />
         <Text style={styles.encourageText}>
-          {getEncouragingMessage(streak?.currentStreak ?? 0)}
+          {streak ? StreakIntelligence.getEncouragingMessage(streak) : getEncouragingMessage(0)}
         </Text>
       </View>
     </ScrollView>

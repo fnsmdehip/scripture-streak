@@ -19,6 +19,8 @@ export interface StreakData {
   totalDaysRead: number;
   readDates: string[];
   lastReadDate: string | null;
+  freezesUsedThisMonth?: number;
+  lastFreezeMonth?: string; // "YYYY-MM"
 }
 
 export interface ReadingProgress {

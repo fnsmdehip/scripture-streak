@@ -18,6 +18,7 @@ import { Card } from '../components/Card';
 import { StorageService } from '../services/storage';
 import { UserSettings } from '../types';
 import { TRANSLATIONS } from '../constants/bible';
+import { NotificationService } from '../services/notifications';
 
 const PRIVACY_URL = 'https://printmaxx.com/privacy';
 const TERMS_URL = 'https://printmaxx.com/tos';
@@ -60,6 +61,11 @@ export function SettingsScreen() {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
     await StorageService.saveUserSettings(updated);
+
+    // Reschedule notification when time changes
+    if (key === 'notificationTime' && updated.streakReminders) {
+      await NotificationService.scheduleDailyReminder(updated.notificationTime);
+    }
   };
 
   const handleToggle = async (key: 'streakReminders' | 'isPremium', value: boolean) => {
@@ -68,6 +74,15 @@ export function SettingsScreen() {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
     await StorageService.saveUserSettings(updated);
+
+    // Schedule or cancel notifications based on toggle
+    if (key === 'streakReminders') {
+      if (value) {
+        await NotificationService.scheduleDailyReminder(updated.notificationTime);
+      } else {
+        await NotificationService.cancelAllScheduled();
+      }
+    }
   };
 
   const handleResetData = () => {

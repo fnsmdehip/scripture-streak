@@ -14,7 +14,8 @@ import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants
 import { Card } from '../components/Card';
 import { StorageService } from '../services/storage';
 import { READING_PLANS, EMPTY_STATE_MESSAGES } from '../constants/plans';
-import { ReadingPlan, ReadingPlanProgress } from '../types';
+import type { ReadingPlan, ReadingPlanProgress } from '../types';
+import { getPlanDaySchedule, getPlanSchedule } from '../data/readingPlans';
 
 const PLAN_ICON_MAP: Record<string, string> = {
   'genesis-30': 'globe',
@@ -169,39 +170,99 @@ export function PlansScreen() {
           </Card>
         )}
 
-        {!started ? (
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={() => handleStartPlan(selectedPlan)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.startButtonText}>Start Plan</Text>
-          </TouchableOpacity>
-        ) : !doneToday && !isComplete ? (
-          <TouchableOpacity
-            style={styles.readTodayButton}
-            onPress={() => handleReadToday(selectedPlan)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="checkmark-circle" size={24} color={Colors.navy} style={{ marginRight: Spacing.md }} />
-            <View>
-              <Text style={styles.readTodayText}>Mark Today's Reading</Text>
-              <Text style={styles.readTodaySub}>
-                Day {progress?.currentDay || 1}: {selectedPlan.book}{' '}
-                {Math.ceil(
-                  (selectedPlan.totalChapters / selectedPlan.durationDays) *
-                    (progress?.currentDay || 1)
-                )}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ) : doneToday && !isComplete ? (
-          <Card style={styles.doneCard}>
-            <Ionicons name="checkmark-circle" size={32} color={Colors.success} style={{ marginBottom: Spacing.sm }} />
-            <Text style={styles.doneText}>Today's reading is done</Text>
-            <Text style={styles.doneSub}>Come back tomorrow for day {(progress?.currentDay || 1)}</Text>
+        {/* Today's Reading Action */}
+        {(() => {
+          const currentDay = progress?.currentDay || 1;
+          const todaySchedule = getPlanDaySchedule(selectedPlan.id, currentDay);
+          const chapterLabel = todaySchedule
+            ? todaySchedule.chapters.join(', ')
+            : `${selectedPlan.book} ${currentDay}`;
+          const verseLabel = todaySchedule ? `${todaySchedule.verseCount} verses` : '';
+
+          if (!started) {
+            return (
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={() => handleStartPlan(selectedPlan)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.startButtonText}>Start Plan</Text>
+              </TouchableOpacity>
+            );
+          }
+          if (!doneToday && !isComplete) {
+            return (
+              <TouchableOpacity
+                style={styles.readTodayButton}
+                onPress={() => handleReadToday(selectedPlan)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark-circle" size={24} color={Colors.navy} style={{ marginRight: Spacing.md }} />
+                <View>
+                  <Text style={styles.readTodayText}>Mark Today's Reading</Text>
+                  <Text style={styles.readTodaySub}>
+                    Day {currentDay}: {chapterLabel} ({verseLabel})
+                  </Text>
+                  {todaySchedule?.studyNote && (
+                    <Text style={[styles.readTodaySub, { marginTop: 4, fontStyle: 'italic' }]}>
+                      {todaySchedule.studyNote}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          }
+          if (doneToday && !isComplete) {
+            return (
+              <Card style={styles.doneCard}>
+                <Ionicons name="checkmark-circle" size={32} color={Colors.success} style={{ marginBottom: Spacing.sm }} />
+                <Text style={styles.doneText}>Today's reading is done</Text>
+                <Text style={styles.doneSub}>Come back tomorrow for day {currentDay}</Text>
+              </Card>
+            );
+          }
+          return null;
+        })()}
+
+        {/* Full Reading Schedule */}
+        {started && (
+          <Card style={[styles.progressCard, { marginTop: Spacing.md }]}>
+            <Text style={styles.progressTitle}>Reading Schedule</Text>
+            {getPlanSchedule(selectedPlan.id).slice(0, selectedPlan.durationDays).map((scheduleDay) => {
+              const dayCompleted = progress ? scheduleDay.day < (progress.currentDay || 1) : false;
+              const isCurrent = progress ? scheduleDay.day === (progress.currentDay || 1) : scheduleDay.day === 1;
+              return (
+                <View
+                  key={scheduleDay.day}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 8,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.borderLight,
+                    opacity: dayCompleted ? 0.5 : 1,
+                  }}
+                >
+                  <Ionicons
+                    name={dayCompleted ? 'checkmark-circle' : isCurrent ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={dayCompleted ? Colors.success : isCurrent ? Colors.gold : Colors.textMuted}
+                    style={{ marginRight: 12 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[Typography.body, { fontWeight: isCurrent ? '700' : '400', fontSize: 14 }]}>
+                      Day {scheduleDay.day}: {scheduleDay.chapters.join(', ')}
+                    </Text>
+                    <Text style={[Typography.bodySmall, { fontSize: 12, fontWeight: '300' }]}>
+                      {scheduleDay.verseCount} verses
+                      {scheduleDay.studyNote ? ` \u2022 ${scheduleDay.studyNote.substring(0, 60)}...` : ''}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
           </Card>
-        ) : null}
+        )}
       </ScrollView>
     );
   }

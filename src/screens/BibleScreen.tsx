@@ -115,8 +115,7 @@ export function BibleScreen() {
 
   const handleShareVerse = async (verse: Verse) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const ref = VerseService.formatReference(verse);
-    const text = `\u201C${verse.text}\u201D\n\n\u2014 ${ref} (${verse.translation})\n\nShared via Scripture Streak`;
+    const text = VerseService.formatForSharing(verse);
     try {
       await Share.share({ message: text });
     } catch {
