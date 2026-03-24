@@ -249,7 +249,7 @@ export function BibleScreen() {
               <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search books..."
+                placeholder=""
                 placeholderTextColor={Colors.textMuted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
