@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
@@ -14,6 +15,15 @@ import { Card } from '../components/Card';
 import { StorageService } from '../services/storage';
 import { READING_PLANS, EMPTY_STATE_MESSAGES } from '../constants/plans';
 import { ReadingPlan, ReadingPlanProgress } from '../types';
+
+const PLAN_ICON_MAP: Record<string, string> = {
+  'genesis-30': 'globe',
+  'psalms-30': 'musical-notes',
+  'proverbs-31': 'bulb',
+  'john-21': 'sparkles',
+  'romans-16': 'document-text',
+  'matthew-28': 'star',
+};
 
 export function PlansScreen() {
   const insets = useSafeAreaInsets();
@@ -82,6 +92,10 @@ export function PlansScreen() {
     return progress.completedDays.includes(today);
   };
 
+  const getPlanIconName = (planId: string): string => {
+    return PLAN_ICON_MAP[planId] || 'book';
+  };
+
   if (selectedPlan) {
     const progress = allProgress[selectedPlan.id];
     const started = hasStarted(selectedPlan.id);
@@ -100,12 +114,17 @@ export function PlansScreen() {
           style={styles.backRow}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backIcon}>{'\u2190'}</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.gold} style={{ marginRight: Spacing.sm }} />
           <Text style={styles.backText}>All Plans</Text>
         </TouchableOpacity>
 
         <View style={styles.planDetailHeader}>
-          <Text style={styles.planDetailIcon}>{selectedPlan.icon}</Text>
+          <Ionicons
+            name={getPlanIconName(selectedPlan.id) as any}
+            size={56}
+            color={Colors.gold}
+            style={{ marginBottom: Spacing.md }}
+          />
           <Text style={styles.planDetailTitle}>{selectedPlan.title}</Text>
           <Text style={styles.planDetailDesc}>{selectedPlan.description}</Text>
         </View>
@@ -143,7 +162,7 @@ export function PlansScreen() {
             </View>
             {isComplete && (
               <View style={styles.completeBanner}>
-                <Text style={styles.completeEmoji}>{'\uD83C\uDF89'}</Text>
+                <Ionicons name="ribbon" size={24} color={Colors.success} style={{ marginRight: Spacing.sm }} />
                 <Text style={styles.completeText}>Plan Complete!</Text>
               </View>
             )}
@@ -164,7 +183,7 @@ export function PlansScreen() {
             onPress={() => handleReadToday(selectedPlan)}
             activeOpacity={0.8}
           >
-            <Text style={styles.readTodayIcon}>{'\u2714\uFE0F'}</Text>
+            <Ionicons name="checkmark-circle" size={24} color={Colors.navy} style={{ marginRight: Spacing.md }} />
             <View>
               <Text style={styles.readTodayText}>Mark Today's Reading</Text>
               <Text style={styles.readTodaySub}>
@@ -178,7 +197,7 @@ export function PlansScreen() {
           </TouchableOpacity>
         ) : doneToday && !isComplete ? (
           <Card style={styles.doneCard}>
-            <Text style={styles.doneEmoji}>{'\u2705'}</Text>
+            <Ionicons name="checkmark-circle" size={32} color={Colors.success} style={{ marginBottom: Spacing.sm }} />
             <Text style={styles.doneText}>Today's reading is done</Text>
             <Text style={styles.doneSub}>Come back tomorrow for day {(progress?.currentDay || 1)}</Text>
           </Card>
@@ -222,7 +241,7 @@ export function PlansScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.planCardLeft}>
-                  <Text style={styles.planCardIcon}>{plan.icon}</Text>
+                  <Ionicons name={getPlanIconName(plan.id) as any} size={28} color={Colors.gold} />
                 </View>
                 <View style={styles.planCardInfo}>
                   <Text style={styles.planCardTitle}>{plan.title}</Text>
@@ -233,7 +252,7 @@ export function PlansScreen() {
                     {pct}% complete {doneToday ? '\u2022 Done today' : ''}
                   </Text>
                 </View>
-                <Text style={styles.chevron}>{'\u203A'}</Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
               </TouchableOpacity>
             );
           })}
@@ -247,7 +266,7 @@ export function PlansScreen() {
 
       {availablePlans.length === 0 ? (
         <Card style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>{EMPTY_STATE_MESSAGES.noPlans.icon}</Text>
+          <Ionicons name="library" size={48} color={Colors.textMuted} style={{ marginBottom: Spacing.md }} />
           <Text style={styles.emptyTitle}>{EMPTY_STATE_MESSAGES.noPlans.title}</Text>
           <Text style={styles.emptyMessage}>{EMPTY_STATE_MESSAGES.noPlans.message}</Text>
         </Card>
@@ -260,7 +279,7 @@ export function PlansScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.planCardLeft}>
-              <Text style={styles.planCardIcon}>{plan.icon}</Text>
+              <Ionicons name={getPlanIconName(plan.id) as any} size={28} color={Colors.gold} />
             </View>
             <View style={styles.planCardInfo}>
               <Text style={styles.planCardTitle}>{plan.title}</Text>
@@ -268,10 +287,10 @@ export function PlansScreen() {
                 {plan.description}
               </Text>
               <Text style={styles.planCardMeta}>
-                {plan.book} \u2022 {plan.durationDays} days
+                {plan.book} {'\u2022'} {plan.durationDays} days
               </Text>
             </View>
-            <Text style={styles.chevron}>{'\u203A'}</Text>
+            <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
           </TouchableOpacity>
         ))
       )}
@@ -295,11 +314,13 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.bodySmall,
     marginBottom: Spacing.lg,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   sectionHeader: {
     ...Typography.caption,
     marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
+    marginTop: 24,
     paddingLeft: Spacing.xs,
     color: Colors.textMuted,
   },
@@ -310,6 +331,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
     ...Shadows.card,
     minHeight: 80,
   },
@@ -321,9 +344,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
-  },
-  planCardIcon: {
-    fontSize: 28,
   },
   planCardInfo: {
     flex: 1,
@@ -337,11 +357,14 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     fontSize: 13,
     marginBottom: 4,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   planCardMeta: {
     fontSize: 12,
     color: Colors.textMuted,
     fontWeight: '500',
+    fontVariant: ['tabular-nums'],
   },
   planMiniBar: {
     height: 4,
@@ -355,22 +378,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gold,
     borderRadius: 2,
   },
-  chevron: {
-    fontSize: 24,
-    color: Colors.textMuted,
-    marginLeft: Spacing.sm,
-  },
   // Detail view
   backRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.lg,
     minHeight: 44,
-  },
-  backIcon: {
-    fontSize: 20,
-    color: Colors.gold,
-    marginRight: Spacing.sm,
   },
   backText: {
     ...Typography.body,
@@ -381,10 +394,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
-  planDetailIcon: {
-    fontSize: 56,
-    marginBottom: Spacing.md,
-  },
   planDetailTitle: {
     ...Typography.h1,
     textAlign: 'center',
@@ -394,7 +403,8 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 24,
+    fontWeight: '300',
+    lineHeight: 26,
   },
   planStatsCard: {
     marginBottom: Spacing.lg,
@@ -411,6 +421,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.navy,
     marginBottom: 2,
+    fontVariant: ['tabular-nums'],
   },
   planStatLabel: {
     ...Typography.caption,
@@ -427,6 +438,7 @@ const styles = StyleSheet.create({
   progressTitle: {
     ...Typography.h3,
     marginBottom: Spacing.md,
+    paddingTop: 24,
   },
   progressBarOuter: {
     height: 12,
@@ -447,9 +459,13 @@ const styles = StyleSheet.create({
   progressPercent: {
     ...Typography.h3,
     color: Colors.gold,
+    fontVariant: ['tabular-nums'],
   },
   progressDays: {
     ...Typography.bodySmall,
+    fontWeight: '300',
+    lineHeight: 24,
+    fontVariant: ['tabular-nums'],
   },
   completeBanner: {
     flexDirection: 'row',
@@ -459,10 +475,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginTop: Spacing.md,
-  },
-  completeEmoji: {
-    fontSize: 24,
-    marginRight: Spacing.sm,
   },
   completeText: {
     ...Typography.h3,
@@ -496,28 +508,22 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  readTodayIcon: {
-    fontSize: 24,
-    marginRight: Spacing.md,
-  },
   readTodayText: {
     ...Typography.button,
     color: Colors.navy,
   },
   readTodaySub: {
     fontSize: 13,
+    fontWeight: '300',
     color: '#1A1A2E99',
     marginTop: 2,
+    lineHeight: 24,
   },
   doneCard: {
     alignItems: 'center',
     backgroundColor: Colors.successLight,
     borderWidth: 1,
     borderColor: '#4CAF5030',
-  },
-  doneEmoji: {
-    fontSize: 32,
-    marginBottom: Spacing.sm,
   },
   doneText: {
     ...Typography.h3,
@@ -527,15 +533,13 @@ const styles = StyleSheet.create({
   doneSub: {
     ...Typography.bodySmall,
     textAlign: 'center',
+    fontWeight: '300',
+    lineHeight: 24,
   },
   // Empty state
   emptyCard: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: Spacing.md,
   },
   emptyTitle: {
     ...Typography.h3,
@@ -545,5 +549,7 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     textAlign: 'center',
     paddingHorizontal: Spacing.lg,
+    fontWeight: '300',
+    lineHeight: 24,
   },
 });

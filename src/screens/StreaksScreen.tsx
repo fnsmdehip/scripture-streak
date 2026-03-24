@@ -9,6 +9,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
@@ -114,12 +115,19 @@ export function StreaksScreen() {
     return Math.round((recentDays / 30) * 100);
   };
 
-  const getStreakEmoji = (count: number): string => {
-    if (count >= 100) return '\uD83D\uDC51';
-    if (count >= 30) return '\uD83D\uDD25';
-    if (count >= 7) return '\u2B50';
-    if (count > 0) return '\uD83C\uDF31';
-    return '\uD83C\uDF3F';
+  const getStreakIconName = (count: number): string => {
+    if (count >= 100) return 'trophy';
+    if (count >= 30) return 'flame';
+    if (count >= 7) return 'star';
+    if (count > 0) return 'leaf';
+    return 'leaf-outline';
+  };
+
+  const getStreakIconColor = (count: number): string => {
+    if (count >= 100) return Colors.gold;
+    if (count >= 30) return Colors.streakFire;
+    if (count >= 7) return Colors.gold;
+    return Colors.success;
   };
 
   const getStreakMessage = (count: number): string => {
@@ -183,7 +191,12 @@ export function StreaksScreen() {
                 ]}
               />
               <View style={styles.streakRingInner}>
-                <Text style={styles.streakEmoji}>{getStreakEmoji(streak.currentStreak)}</Text>
+                <Ionicons
+                  name={getStreakIconName(streak.currentStreak) as any}
+                  size={28}
+                  color={getStreakIconColor(streak.currentStreak)}
+                  style={{ marginBottom: 2 }}
+                />
                 <Animated.Text
                   style={[
                     styles.streakNumber,
@@ -207,21 +220,21 @@ export function StreaksScreen() {
             <StatCard
               value={streak.longestStreak}
               label="Best Streak"
-              icon={'\uD83C\uDFC6'}
+              iconName="trophy"
               color={Colors.gold}
             />
             <View style={styles.statSpacer} />
             <StatCard
               value={streak.totalDaysRead}
               label="Total Days"
-              icon={'\uD83D\uDCD6'}
+              iconName="book"
               color={Colors.navy}
             />
             <View style={styles.statSpacer} />
             <StatCard
               value={getWeeklyAverage()}
               label="Weekly Avg"
-              icon={'\uD83D\uDCCA'}
+              iconName="bar-chart"
               color={Colors.primaryLight}
             />
           </View>
@@ -234,14 +247,14 @@ export function StreaksScreen() {
                 style={styles.navButton}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.navButtonText}>{'\u2039'}</Text>
+                <Ionicons name="chevron-back" size={20} color={Colors.navy} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={goToNextMonth}
                 style={styles.navButton}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.navButtonText}>{'\u203A'}</Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors.navy} />
               </TouchableOpacity>
             </View>
             <CalendarGrid
@@ -278,10 +291,10 @@ export function StreaksScreen() {
             <Text style={styles.milestonesTitle}>Milestones</Text>
             <View style={styles.milestoneGrid}>
               {[
-                { days: 7, emoji: '\u2B50', label: '1 Week' },
-                { days: 30, emoji: '\uD83D\uDD25', label: '1 Month' },
-                { days: 100, emoji: '\uD83D\uDC8E', label: '100 Days' },
-                { days: 365, emoji: '\uD83D\uDC51', label: '1 Year' },
+                { days: 7, iconName: 'star', label: '1 Week', color: Colors.gold },
+                { days: 30, iconName: 'flame', label: '1 Month', color: Colors.streakFire },
+                { days: 100, iconName: 'diamond', label: '100 Days', color: Colors.primaryLight },
+                { days: 365, iconName: 'trophy', label: '1 Year', color: Colors.gold },
               ].map((m) => {
                 const achieved = streak.totalDaysRead >= m.days;
                 return (
@@ -292,9 +305,12 @@ export function StreaksScreen() {
                       !achieved && styles.milestoneItemLocked,
                     ]}
                   >
-                    <Text style={[styles.milestoneEmoji, !achieved && { opacity: 0.3 }]}>
-                      {achieved ? m.emoji : '\uD83D\uDD12'}
-                    </Text>
+                    <Ionicons
+                      name={(achieved ? m.iconName : 'lock-closed') as any}
+                      size={32}
+                      color={achieved ? m.color : Colors.textMuted}
+                      style={[!achieved && { opacity: 0.3 }]}
+                    />
                     <Text style={[styles.milestoneLabel, !achieved && { opacity: 0.4 }]}>
                       {m.label}
                     </Text>
@@ -325,6 +341,8 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.bodySmall,
     marginBottom: Spacing.lg,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   streakHero: {
     alignItems: 'center',
@@ -363,16 +381,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.goldMuted,
   },
-  streakEmoji: {
-    fontSize: 28,
-    marginBottom: 2,
-  },
   streakNumber: {
     fontSize: 48,
-    fontWeight: '800',
+    fontWeight: '200',
     color: Colors.gold,
     lineHeight: 52,
+    letterSpacing: -2,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
+    fontVariant: ['tabular-nums'],
   },
   streakLabel: {
     fontSize: 11,
@@ -413,12 +429,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  navButtonText: {
-    fontSize: 24,
-    color: Colors.navy,
-    fontWeight: '600',
-    lineHeight: 28,
-  },
   calendarFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,6 +454,7 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     fontSize: 12,
     fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   consistencyCard: {
     alignItems: 'center',
@@ -452,6 +463,7 @@ const styles = StyleSheet.create({
   consistencyTitle: {
     ...Typography.h3,
     marginBottom: Spacing.md,
+    paddingTop: 24,
   },
   progressBarOuter: {
     width: '100%',
@@ -469,6 +481,7 @@ const styles = StyleSheet.create({
   consistencyScore: {
     ...Typography.h2,
     color: Colors.gold,
+    fontVariant: ['tabular-nums'],
   },
   milestonesCard: {
     marginBottom: Spacing.lg,
@@ -477,6 +490,7 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     marginBottom: Spacing.md,
     textAlign: 'center',
+    paddingTop: 24,
   },
   milestoneGrid: {
     flexDirection: 'row',
@@ -489,13 +503,10 @@ const styles = StyleSheet.create({
   milestoneItemLocked: {
     opacity: 0.5,
   },
-  milestoneEmoji: {
-    fontSize: 32,
-    marginBottom: Spacing.xs,
-  },
   milestoneLabel: {
     ...Typography.caption,
     fontSize: 10,
+    marginTop: Spacing.xs,
   },
   // Skeleton
   skeletonCircle: {

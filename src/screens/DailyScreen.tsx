@@ -10,6 +10,7 @@ import {
   Platform,
   Share,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import * as StoreReview from 'expo-store-review';
@@ -229,9 +230,12 @@ export function DailyScreen() {
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.actionIcon}>
-                  {bookmarked ? '\uD83D\uDD16' : '\uD83D\uDCCC'}
-                </Text>
+                <Ionicons
+                  name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                  size={16}
+                  color={Colors.primary}
+                  style={styles.actionIconStyle}
+                />
                 <Text style={styles.actionLabel}>
                   {bookmarked ? 'Saved' : 'Save'}
                 </Text>
@@ -245,9 +249,12 @@ export function DailyScreen() {
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.actionIcon}>
-                  {copied ? '\u2705' : '\uD83D\uDCCB'}
-                </Text>
+                <Ionicons
+                  name={copied ? 'checkmark-circle' : 'copy-outline'}
+                  size={16}
+                  color={Colors.primary}
+                  style={styles.actionIconStyle}
+                />
                 <Text style={styles.actionLabel}>
                   {copied ? 'Copied' : 'Copy'}
                 </Text>
@@ -261,7 +268,12 @@ export function DailyScreen() {
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.actionIcon}>{'\uD83D\uDCE4'}</Text>
+                <Ionicons
+                  name="share-outline"
+                  size={16}
+                  color={Colors.primary}
+                  style={styles.actionIconStyle}
+                />
                 <Text style={styles.actionLabel}>Share</Text>
               </TouchableOpacity>
             </View>
@@ -277,7 +289,12 @@ export function DailyScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.readButtonContent}>
-            <Text style={styles.readButtonIcon}>{'\u2714\uFE0F'}</Text>
+            <Ionicons
+              name="checkmark-circle"
+              size={24}
+              color={Colors.textOnDark}
+              style={{ marginRight: Spacing.md }}
+            />
             <View>
               <Text style={styles.readButtonText}>Mark Today as Read</Text>
               <Text style={styles.readButtonSub}>Keep your streak alive</Text>
@@ -294,7 +311,7 @@ export function DailyScreen() {
           ]}
         >
           <View style={styles.completedCircle}>
-            <Text style={styles.completedIcon}>{'\u2705'}</Text>
+            <Ionicons name="checkmark-circle" size={28} color={Colors.success} />
           </View>
           <Text style={styles.completedText}>Today's reading complete</Text>
           <Text style={styles.completedSub}>
@@ -327,7 +344,7 @@ export function DailyScreen() {
 
       {/* Encouraging message */}
       <View style={styles.encourageCard}>
-        <Text style={styles.encourageIcon}>{'\uD83D\uDCAB'}</Text>
+        <Ionicons name="sparkles" size={20} color={Colors.gold} style={{ marginRight: Spacing.sm }} />
         <Text style={styles.encourageText}>
           {getEncouragingMessage(streak?.currentStreak ?? 0)}
         </Text>
@@ -379,6 +396,8 @@ const styles = StyleSheet.create({
   date: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   verseCard: {
     marginBottom: Spacing.lg,
@@ -429,8 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     minHeight: 44,
   },
-  actionIcon: {
-    fontSize: 16,
+  actionIconStyle: {
     marginRight: Spacing.xs,
   },
   actionLabel: {
@@ -461,18 +479,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  readButtonIcon: {
-    fontSize: 24,
-    marginRight: Spacing.md,
-  },
   readButtonText: {
     ...Typography.button,
     color: Colors.textOnDark,
   },
   readButtonSub: {
     fontSize: 13,
+    fontWeight: '300',
     color: '#FFFFFF88',
     marginTop: 2,
+    lineHeight: 24,
   },
   completedCard: {
     backgroundColor: Colors.successLight,
@@ -492,9 +508,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
-  completedIcon: {
-    fontSize: 24,
-  },
   completedText: {
     ...Typography.h3,
     color: Colors.success,
@@ -504,6 +517,8 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     textAlign: 'center',
     color: Colors.textSecondary,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   quickStats: {
     flexDirection: 'row',
@@ -511,6 +526,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
     ...Shadows.card,
   },
   quickStatItem: {
@@ -523,11 +540,13 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.xs,
   },
   quickStatValue: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 48,
+    fontWeight: '200',
     color: Colors.navy,
     marginBottom: 2,
+    letterSpacing: -2,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
+    fontVariant: ['tabular-nums'],
   },
   quickStatLabel: {
     ...Typography.caption,
@@ -539,16 +558,16 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  encourageIcon: {
-    fontSize: 20,
-    marginRight: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
   },
   encourageText: {
     ...Typography.bodySmall,
     flex: 1,
     color: Colors.textSecondary,
     fontStyle: 'italic',
+    fontWeight: '300',
+    lineHeight: 24,
   },
   // Skeleton styles
   skeletonHeader: {

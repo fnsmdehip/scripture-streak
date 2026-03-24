@@ -9,6 +9,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius } from '../constants/theme';
 import { TRANSLATIONS } from '../constants/bible';
@@ -29,9 +30,9 @@ const NOTIFICATION_TIMES = [
 ];
 
 const GOALS = [
-  { label: '1 Verse / Day', value: 'verse' as const, icon: '\uD83D\uDCD6', desc: 'Perfect for beginners' },
-  { label: '1 Chapter / Day', value: 'chapter' as const, icon: '\uD83D\uDCDA', desc: 'Steady and consistent' },
-  { label: 'Custom', value: 'custom' as const, icon: '\u2699\uFE0F', desc: 'Set your own pace' },
+  { label: '1 Verse / Day', value: 'verse' as const, iconName: 'book-outline', desc: 'Perfect for beginners' },
+  { label: '1 Chapter / Day', value: 'chapter' as const, iconName: 'library-outline', desc: 'Steady and consistent' },
+  { label: 'Custom', value: 'custom' as const, iconName: 'settings-outline', desc: 'Set your own pace' },
 ];
 
 interface OnboardingScreenProps {
@@ -98,12 +99,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         </Text>
         <View style={styles.welcomeFeatures}>
           {[
-            { icon: '\u2600\uFE0F', text: 'Daily verse with beautiful typography' },
-            { icon: '\uD83D\uDD25', text: 'Streak tracking to build consistency' },
-            { icon: '\uD83D\uDCD6', text: 'Full Bible browser with bookmarks' },
+            { iconName: 'sunny-outline', text: 'Daily verse with beautiful typography' },
+            { iconName: 'flame-outline', text: 'Streak tracking to build consistency' },
+            { iconName: 'book-outline', text: 'Full Bible browser with bookmarks' },
           ].map((feat, i) => (
             <View key={i} style={styles.featureRow}>
-              <Text style={styles.featureIcon}>{feat.icon}</Text>
+              <Ionicons name={feat.iconName as any} size={24} color={Colors.gold} style={{ marginRight: Spacing.md }} />
               <Text style={styles.featureText}>{feat.text}</Text>
             </View>
           ))}
@@ -116,7 +117,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const renderTranslation = () => (
     <View style={styles.stepContainer}>
       <View style={styles.stepContent}>
-        <Text style={styles.stepEmoji}>{'\uD83D\uDCD6'}</Text>
+        <Ionicons name="book" size={56} color={Colors.gold} style={{ marginBottom: Spacing.lg }} />
         <Text style={styles.stepTitle}>Choose Your{'\n'}Translation</Text>
         <Text style={styles.stepBody}>
           Select your preferred Bible translation. You can change this anytime in settings.
@@ -151,7 +152,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const renderGoal = () => (
     <View style={styles.stepContainer}>
       <View style={styles.stepContent}>
-        <Text style={styles.stepEmoji}>{'\uD83C\uDFAF'}</Text>
+        <Ionicons name="flag" size={56} color={Colors.gold} style={{ marginBottom: Spacing.lg }} />
         <Text style={styles.stepTitle}>Set Your{'\n'}Reading Goal</Text>
         <Text style={styles.stepBody}>
           How much Scripture would you like to read each day?
@@ -167,7 +168,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               onPress={() => updateState({ dailyGoal: goal.value })}
               activeOpacity={0.7}
             >
-              <Text style={styles.goalIcon}>{goal.icon}</Text>
+              <Ionicons name={goal.iconName as any} size={28} color={Colors.gold} style={{ marginRight: Spacing.md }} />
               <View style={styles.goalInfo}>
                 <Text
                   style={[
@@ -226,7 +227,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const renderNotifications = () => (
     <View style={styles.stepContainer}>
       <View style={styles.stepContent}>
-        <Text style={styles.stepEmoji}>{'\uD83D\uDD14'}</Text>
+        <Ionicons name="notifications" size={56} color={Colors.gold} style={{ marginBottom: Spacing.lg }} />
         <Text style={styles.stepTitle}>When Should We{'\n'}Remind You?</Text>
         <Text style={styles.stepBody}>
           A gentle daily reminder helps build lasting habits.
@@ -297,7 +298,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             style={styles.backBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text style={styles.backBtnText}>{'\u2190'}</Text>
+            <Ionicons name="arrow-back" size={22} color={Colors.gold} />
           </TouchableOpacity>
         )}
         <View style={styles.dotsRow}>
@@ -380,11 +381,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backBtnText: {
-    fontSize: 22,
-    color: Colors.gold,
-    fontWeight: '600',
-  },
   dotsRow: {
     flex: 1,
     flexDirection: 'row',
@@ -435,10 +431,6 @@ const styles = StyleSheet.create({
     fontSize: 36,
     color: Colors.navy,
   },
-  stepEmoji: {
-    fontSize: 56,
-    marginBottom: Spacing.lg,
-  },
   stepTitle: {
     fontSize: 28,
     fontWeight: '700',
@@ -467,10 +459,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF10',
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
-  },
-  featureIcon: {
-    fontSize: 24,
-    marginRight: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   featureText: {
     fontSize: 16,
@@ -521,10 +511,6 @@ const styles = StyleSheet.create({
   goalCardActive: {
     borderColor: Colors.gold,
     backgroundColor: '#E2B53F15',
-  },
-  goalIcon: {
-    fontSize: 28,
-    marginRight: Spacing.md,
   },
   goalInfo: {
     flex: 1,
@@ -586,6 +572,7 @@ const styles = StyleSheet.create({
     color: Colors.gold,
     minWidth: 40,
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
   counterLabel: {
     fontSize: 16,

@@ -10,6 +10,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius } from '../constants/theme';
@@ -161,7 +162,7 @@ export function SettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.upgradeButtonIcon}>{'\u2728'}</Text>
+              <Ionicons name="sparkles" size={20} color={Colors.gold} style={{ marginRight: Spacing.sm }} />
               <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
               <Text style={styles.upgradePrice}>$19.99/yr</Text>
             </TouchableOpacity>
@@ -187,7 +188,7 @@ export function SettingsScreen() {
                   Change plan or cancel
                 </Text>
               </View>
-              <Text style={styles.chevron}>{'\u203A'}</Text>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity
@@ -243,7 +244,7 @@ export function SettingsScreen() {
             <Text style={styles.settingValueText}>
               {getTimeLabel(settings.notificationTime)}
             </Text>
-            <Text style={styles.expandIcon}>{showTimePicker ? '\u2303' : '\u2304'}</Text>
+            <Ionicons name={showTimePicker ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
           </View>
         </TouchableOpacity>
 
@@ -293,7 +294,7 @@ export function SettingsScreen() {
             <Text style={styles.settingValueText}>
               {settings.preferredTranslation}
             </Text>
-            <Text style={styles.expandIcon}>{showTranslationPicker ? '\u2303' : '\u2304'}</Text>
+            <Ionicons name={showTranslationPicker ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
           </View>
         </TouchableOpacity>
 
@@ -398,7 +399,7 @@ export function SettingsScreen() {
               Leave a review on the App Store
             </Text>
           </View>
-          <Text style={styles.chevron}>{'\u203A'}</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
         </TouchableOpacity>
         <View style={styles.divider} />
         <TouchableOpacity
@@ -409,7 +410,7 @@ export function SettingsScreen() {
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Privacy Policy</Text>
           </View>
-          <Text style={styles.chevron}>{'\u203A'}</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
         </TouchableOpacity>
         <View style={styles.divider} />
         <TouchableOpacity
@@ -420,7 +421,7 @@ export function SettingsScreen() {
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Terms of Service</Text>
           </View>
-          <Text style={styles.chevron}>{'\u203A'}</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
         </TouchableOpacity>
         <View style={styles.divider} />
         <TouchableOpacity
@@ -434,7 +435,7 @@ export function SettingsScreen() {
               Get help or send feedback
             </Text>
           </View>
-          <Text style={styles.chevron}>{'\u203A'}</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
         </TouchableOpacity>
       </Card>
 
@@ -462,11 +463,13 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.bodySmall,
     marginBottom: Spacing.lg,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   sectionHeader: {
     ...Typography.caption,
     marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
+    marginTop: 24,
     paddingLeft: Spacing.xs,
     color: Colors.textMuted,
   },
@@ -492,6 +495,8 @@ const styles = StyleSheet.create({
   settingDescription: {
     ...Typography.bodySmall,
     fontSize: 13,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   settingValue: {
     flexDirection: 'row',
@@ -502,14 +507,6 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.gold,
     fontWeight: '600',
-  },
-  expandIcon: {
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
-  chevron: {
-    fontSize: 20,
-    color: Colors.textMuted,
   },
   versionText: {
     ...Typography.bodySmall,
@@ -573,6 +570,7 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     minWidth: 24,
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
   // Subscription
   subscriptionRow: {
@@ -597,7 +595,8 @@ const styles = StyleSheet.create({
   },
   subscriptionDesc: {
     ...Typography.bodySmall,
-    lineHeight: 20,
+    lineHeight: 24,
+    fontWeight: '300',
   },
   upgradeButton: {
     flexDirection: 'row',
@@ -605,10 +604,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     backgroundColor: Colors.accentMuted,
     minHeight: 56,
-  },
-  upgradeButtonIcon: {
-    fontSize: 20,
-    marginRight: Spacing.sm,
   },
   upgradeButtonText: {
     ...Typography.body,

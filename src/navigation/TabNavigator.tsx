@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, Platform } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { DailyScreen } from '../screens/DailyScreen';
 import { StreaksScreen } from '../screens/StreaksScreen';
 import { BibleScreen } from '../screens/BibleScreen';
@@ -10,19 +11,6 @@ import { Colors, Typography } from '../constants/theme';
 import { RootTabParamList } from '../types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
-
-interface TabIconProps {
-  emoji: string;
-  focused: boolean;
-}
-
-function TabIcon({ emoji, focused }: TabIconProps) {
-  return (
-    <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-      <Text style={[styles.icon, focused && styles.iconActive]}>{emoji}</Text>
-    </View>
-  );
-}
 
 export function TabNavigator() {
   return (
@@ -39,8 +27,12 @@ export function TabNavigator() {
         name="Daily"
         component={DailyScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji={'\u2600\uFE0F'} focused={focused} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? 'sunny' : 'sunny-outline'}
+              size={22}
+              color={color}
+            />
           ),
         }}
       />
@@ -48,8 +40,12 @@ export function TabNavigator() {
         name="Streaks"
         component={StreaksScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji={'\uD83D\uDD25'} focused={focused} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? 'flame' : 'flame-outline'}
+              size={22}
+              color={color}
+            />
           ),
         }}
       />
@@ -57,8 +53,12 @@ export function TabNavigator() {
         name="Bible"
         component={BibleScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji={'\uD83D\uDCD6'} focused={focused} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? 'book' : 'book-outline'}
+              size={22}
+              color={color}
+            />
           ),
         }}
       />
@@ -66,8 +66,12 @@ export function TabNavigator() {
         name="Plans"
         component={PlansScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji={'\uD83D\uDCCB'} focused={focused} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? 'list' : 'list-outline'}
+              size={22}
+              color={color}
+            />
           ),
         }}
       />
@@ -75,8 +79,12 @@ export function TabNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji={'\u2699\uFE0F'} focused={focused} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons
+              name={focused ? 'settings' : 'settings-outline'}
+              size={22}
+              color={color}
+            />
           ),
         }}
       />
@@ -103,21 +111,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : undefined,
-  },
-  iconContainer: {
-    width: 44,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconContainerActive: {
-    backgroundColor: Colors.accentMuted,
-  },
-  icon: {
-    fontSize: 20,
-  },
-  iconActive: {
-    fontSize: 22,
   },
 });

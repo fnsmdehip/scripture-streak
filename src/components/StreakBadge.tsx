@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, BorderRadius, Spacing, Typography } from '../constants/theme';
 
 interface StreakBadgeProps {
@@ -10,18 +11,26 @@ interface StreakBadgeProps {
 export function StreakBadge({ count, size = 'small' }: StreakBadgeProps) {
   const isLarge = size === 'large';
 
-  const getEmoji = () => {
-    if (count >= 30) return '\uD83D\uDD25';
-    if (count >= 7) return '\u2B50';
-    if (count > 0) return '\uD83C\uDF31';
-    return '\uD83C\uDF3F';
+  const getIconName = (): string => {
+    if (count >= 30) return 'flame';
+    if (count >= 7) return 'star';
+    if (count > 0) return 'leaf';
+    return 'leaf-outline';
+  };
+
+  const getIconColor = (): string => {
+    if (count >= 30) return Colors.streakFire;
+    if (count >= 7) return Colors.gold;
+    return Colors.success;
   };
 
   return (
     <View style={[styles.container, isLarge && styles.containerLarge]}>
-      <Text style={[styles.flame, isLarge && styles.flameLarge]}>
-        {getEmoji()}
-      </Text>
+      <Ionicons
+        name={getIconName() as any}
+        size={isLarge ? 36 : 18}
+        color={getIconColor()}
+      />
       <Text style={[styles.count, isLarge && styles.countLarge]}>
         {count}
       </Text>
@@ -50,18 +59,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     minWidth: 120,
   },
-  flame: {
-    fontSize: 18,
-  },
-  flameLarge: {
-    fontSize: 36,
-  },
   count: {
     fontSize: 18,
     fontWeight: '800',
     color: Colors.gold,
     marginTop: 2,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
+    fontVariant: ['tabular-nums'],
   },
   countLarge: {
     fontSize: 36,

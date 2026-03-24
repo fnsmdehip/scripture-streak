@@ -11,6 +11,7 @@ import {
   Platform,
   Share,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -132,7 +133,7 @@ export function BibleScreen() {
           style={styles.backButton}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backIcon}>{'\u2190'}</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.gold} style={{ marginRight: Spacing.xs }} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <View style={styles.breadcrumbPath}>
@@ -162,7 +163,7 @@ export function BibleScreen() {
           {item.testament === 'old' ? 'OT' : 'NT'}
         </Text>
       </View>
-      <Text style={styles.chevron}>{'\u203A'}</Text>
+      <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
     </TouchableOpacity>
   );
 
@@ -202,25 +203,29 @@ export function BibleScreen() {
               style={styles.verseActionBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.verseActionIcon}>
-                {isBookmarked ? '\u2705' : '\uD83D\uDD16'}
-              </Text>
+              <Ionicons
+                name={isBookmarked ? 'checkmark-circle' : 'bookmark-outline'}
+                size={14}
+                color={isBookmarked ? Colors.success : Colors.textMuted}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleCopyVerse(item)}
               style={styles.verseActionBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.verseActionIcon}>
-                {isCopied ? '\u2705' : '\uD83D\uDCCB'}
-              </Text>
+              <Ionicons
+                name={isCopied ? 'checkmark-circle' : 'copy-outline'}
+                size={14}
+                color={isCopied ? Colors.success : Colors.textMuted}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleShareVerse(item)}
               style={styles.verseActionBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.verseActionIcon}>{'\uD83D\uDCE4'}</Text>
+              <Ionicons name="share-outline" size={14} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -231,7 +236,7 @@ export function BibleScreen() {
   // Empty state for search
   const renderEmptySearch = () => (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyIcon}>{'\uD83D\uDD0D'}</Text>
+      <Ionicons name="search" size={48} color={Colors.textMuted} style={{ marginBottom: Spacing.md }} />
       <Text style={styles.emptyTitle}>No Books Found</Text>
       <Text style={styles.emptyMessage}>
         Try a different search term or browse by testament.
@@ -246,7 +251,7 @@ export function BibleScreen() {
         {viewMode === 'books' && (
           <>
             <View style={styles.searchContainer}>
-              <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
+              <Ionicons name="search" size={16} color={Colors.textMuted} style={{ marginRight: Spacing.sm }} />
               <TextInput
                 style={styles.searchInput}
                 placeholder=""
@@ -261,7 +266,7 @@ export function BibleScreen() {
                   onPress={() => setSearchQuery('')}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={styles.clearButton}>{'\u2715'}</Text>
+                  <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -353,19 +358,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     minHeight: 44,
   },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: Spacing.sm,
-  },
   searchInput: {
     flex: 1,
     ...Typography.body,
     paddingVertical: Spacing.sm + 2,
-  },
-  clearButton: {
-    fontSize: 16,
-    color: Colors.textMuted,
-    padding: Spacing.xs,
   },
   filterRow: {
     flexDirection: 'row',
@@ -411,11 +407,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingRight: Spacing.sm,
   },
-  backIcon: {
-    fontSize: 20,
-    color: Colors.gold,
-    marginRight: Spacing.xs,
-  },
   backText: {
     ...Typography.body,
     color: Colors.gold,
@@ -444,6 +435,8 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.sm,
     minHeight: 56,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
     ...Shadows.card,
   },
   bookInfo: {
@@ -456,6 +449,8 @@ const styles = StyleSheet.create({
   bookChapters: {
     ...Typography.bodySmall,
     fontSize: 13,
+    fontWeight: '300',
+    lineHeight: 24,
   },
   testamentBadge: {
     paddingVertical: 3,
@@ -480,14 +475,11 @@ const styles = StyleSheet.create({
   newTestamentText: {
     color: Colors.success,
   },
-  chevron: {
-    fontSize: 24,
-    color: Colors.textMuted,
-  },
   sectionTitle: {
     ...Typography.h3,
     marginBottom: Spacing.md,
     textAlign: 'center',
+    paddingTop: 24,
   },
   chapterGrid: {
     flexDirection: 'row',
@@ -509,6 +501,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontWeight: '600',
     color: Colors.navy,
+    fontVariant: ['tabular-nums'],
   },
   chapterTitle: {
     ...Typography.h2,
@@ -528,6 +521,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
     textAlign: 'right',
     marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
   verseContentWrap: {
     flex: 1,
@@ -553,16 +547,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
-  verseActionIcon: {
-    fontSize: 14,
-  },
   emptyState: {
     alignItems: 'center',
     paddingVertical: Spacing.xxl,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: Spacing.md,
   },
   emptyTitle: {
     ...Typography.h3,
@@ -572,5 +559,7 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,
+    fontWeight: '300',
+    lineHeight: 24,
   },
 });

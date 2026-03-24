@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: Colors.textSecondary,
+    fontVariant: ['tabular-nums'],
   },
   dayTextRead: {
     color: Colors.navy,

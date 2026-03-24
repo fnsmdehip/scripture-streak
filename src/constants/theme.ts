@@ -72,11 +72,12 @@ export const BorderRadius = {
 
 export const Typography: Record<string, TextStyle> = {
   heroNumber: {
-    fontSize: 64,
-    fontWeight: '800',
+    fontSize: 48,
+    fontWeight: '200',
     color: Colors.gold,
     letterSpacing: -2,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : undefined,
+    fontVariant: ['tabular-nums'],
   },
   h1: {
     fontSize: 28,

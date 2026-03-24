@@ -21,6 +21,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
     ...Shadows.card,
   },
 });
