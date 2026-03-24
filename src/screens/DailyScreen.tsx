@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import * as StoreReview from 'expo-store-review';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from '../constants/theme';
 import { Card } from '../components/Card';
@@ -76,6 +77,7 @@ export function DailyScreen() {
 
   const handleMarkAsRead = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const previousStreak = streak;
     const updated = await StorageService.recordReading();
     setStreak(updated);
     setHasRead(true);
@@ -86,6 +88,23 @@ export function DailyScreen() {
       tension: 80,
       useNativeDriver: true,
     }).start();
+
+    // Request review after first streak day completed (first real value moment)
+    // Per Cal AI insights: NEVER during onboarding, only after genuine value
+    const wasFirstDay = previousStreak && previousStreak.totalDaysRead === 0 && updated.totalDaysRead === 1;
+    if (wasFirstDay) {
+      try {
+        const isAvailable = await StoreReview.isAvailableAsync();
+        if (isAvailable) {
+          // Slight delay so the user sees the completion animation first
+          setTimeout(() => {
+            StoreReview.requestReview();
+          }, 1500);
+        }
+      } catch {
+        // Silently fail - review prompt is non-critical
+      }
+    }
   };
 
   const handleBookmark = async () => {

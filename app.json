@@ -13,21 +13,37 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.scripturestreak.app",
+      "bundleIdentifier": "com.printmaxx.scripturestreak",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserNotificationsUsageDescription": "Scripture Streak sends daily verse reminders to help you maintain your reading streak",
+        "LSApplicationCategoryType": "public.app-category.lifestyle"
+      },
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": []
       }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#1A1A2E"
       },
-      "package": "com.scripturestreak.app"
+      "package": "com.printmaxx.scripturestreak"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "privacyPolicyUrl": "https://printmaxx.com/privacy",
+      "termsOfServiceUrl": "https://printmaxx.com/tos",
+      "supportUrl": "https://printmaxx.com/apps/scripture-streak/support",
+      "supportEmail": "support@printmaxx.com"
     },
     "plugins": [
       "expo-asset",
@@ -36,7 +52,8 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#E2B53F"
+          "color": "#E2B53F",
+          "sounds": []
         }
       ]
     ]

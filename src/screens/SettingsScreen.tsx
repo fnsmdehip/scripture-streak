@@ -8,6 +8,7 @@ import {
   Switch,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,10 @@ import { Card } from '../components/Card';
 import { StorageService } from '../services/storage';
 import { UserSettings } from '../types';
 import { TRANSLATIONS } from '../constants/bible';
+
+const PRIVACY_URL = 'https://printmaxx.com/privacy';
+const TERMS_URL = 'https://printmaxx.com/tos';
+const SUPPORT_URL = 'https://printmaxx.com/apps/scripture-streak/support';
 
 const NOTIFICATION_TIMES = [
   { label: '6:00 AM', value: '06:00' },
@@ -398,6 +403,7 @@ export function SettingsScreen() {
         <View style={styles.divider} />
         <TouchableOpacity
           style={styles.settingRow}
+          onPress={() => Linking.openURL(PRIVACY_URL)}
           activeOpacity={0.7}
         >
           <View style={styles.settingInfo}>
@@ -408,10 +414,25 @@ export function SettingsScreen() {
         <View style={styles.divider} />
         <TouchableOpacity
           style={styles.settingRow}
+          onPress={() => Linking.openURL(TERMS_URL)}
           activeOpacity={0.7}
         >
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Terms of Service</Text>
+          </View>
+          <Text style={styles.chevron}>{'\u203A'}</Text>
+        </TouchableOpacity>
+        <View style={styles.divider} />
+        <TouchableOpacity
+          style={styles.settingRow}
+          onPress={() => Linking.openURL(SUPPORT_URL)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Support</Text>
+            <Text style={styles.settingDescription}>
+              Get help or send feedback
+            </Text>
           </View>
           <Text style={styles.chevron}>{'\u203A'}</Text>
         </TouchableOpacity>

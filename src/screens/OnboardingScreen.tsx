@@ -7,6 +7,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Platform,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius } from '../constants/theme';
@@ -344,9 +345,16 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           </Text>
         </TouchableOpacity>
         {step === 0 && (
-          <Text style={styles.termsText}>
-            By continuing, you agree to our Terms & Privacy Policy
-          </Text>
+          <View style={styles.termsRow}>
+            <Text style={styles.termsText}>By continuing, you agree to our </Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://printmaxx.com/tos')}>
+              <Text style={styles.termsLink}>Terms</Text>
+            </TouchableOpacity>
+            <Text style={styles.termsText}> & </Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://printmaxx.com/privacy')}>
+              <Text style={styles.termsLink}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
@@ -677,10 +685,20 @@ const styles = StyleSheet.create({
     color: Colors.navy,
     letterSpacing: 0.3,
   },
+  termsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: Spacing.sm,
+  },
   termsText: {
     fontSize: 12,
     color: '#FFFFFF44',
     textAlign: 'center',
-    marginTop: Spacing.sm,
+  },
+  termsLink: {
+    fontSize: 12,
+    color: '#FFFFFF88',
+    textDecorationLine: 'underline',
   },
 });

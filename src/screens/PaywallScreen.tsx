@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius } from '../constants/theme';
@@ -14,14 +15,17 @@ interface PaywallScreenProps {
   onSubscribe: () => void;
 }
 
-const PREMIUM_FEATURES = [
-  { icon: '\uD83D\uDCD6', title: 'Full Bible Access', desc: 'All 66 books, every chapter and verse' },
-  { icon: '\uD83D\uDD16', title: 'Unlimited Bookmarks', desc: 'Save as many verses as you want' },
-  { icon: '\uD83D\uDCCB', title: 'Reading Plans', desc: 'Guided journeys through Scripture' },
-  { icon: '\uD83D\uDCCA', title: 'Advanced Stats', desc: 'Detailed reading analytics and insights' },
-  { icon: '\uD83D\uDD14', title: 'Smart Reminders', desc: 'Personalized notification scheduling' },
-  { icon: '\u2728', title: 'No Ads Ever', desc: 'Pure, distraction-free reading' },
+const COMPARISON_FEATURES = [
+  { name: 'Daily Verse', free: true, pro: true },
+  { name: 'Basic Streaks', free: true, pro: true },
+  { name: 'All Translations', free: false, pro: true },
+  { name: 'Reading Plans', free: false, pro: true },
+  { name: 'Offline Access', free: false, pro: true },
+  { name: 'Advanced Stats', free: false, pro: true },
 ];
+
+const PRIVACY_URL = 'https://printmaxx.com/privacy';
+const TERMS_URL = 'https://printmaxx.com/tos';
 
 export function PaywallScreen({ onContinueFree, onSubscribe }: PaywallScreenProps) {
   const insets = useSafeAreaInsets();
@@ -71,17 +75,28 @@ export function PaywallScreen({ onContinueFree, onSubscribe }: PaywallScreenProp
           </Text>
         </View>
 
-        {/* Features */}
-        <View style={styles.featuresGrid}>
-          {PREMIUM_FEATURES.map((feat, i) => (
-            <View key={i} style={styles.featureItem}>
-              <View style={styles.featureIconWrap}>
-                <Text style={styles.featureIcon}>{feat.icon}</Text>
-              </View>
-              <View style={styles.featureInfo}>
-                <Text style={styles.featureTitle}>{feat.title}</Text>
-                <Text style={styles.featureDesc}>{feat.desc}</Text>
-              </View>
+        {/* Feature Comparison Table */}
+        <View style={styles.comparisonCard}>
+          <View style={styles.comparisonHeader}>
+            <Text style={styles.comparisonFeatureHeader}>Feature</Text>
+            <Text style={styles.comparisonPlanHeader}>Free</Text>
+            <Text style={[styles.comparisonPlanHeader, styles.comparisonProHeader]}>Pro</Text>
+          </View>
+          {COMPARISON_FEATURES.map((feat, i) => (
+            <View
+              key={i}
+              style={[
+                styles.comparisonRow,
+                i === COMPARISON_FEATURES.length - 1 && styles.comparisonRowLast,
+              ]}
+            >
+              <Text style={styles.comparisonFeatureName}>{feat.name}</Text>
+              <Text style={styles.comparisonCheck}>
+                {feat.free ? '\u2713' : '\u2014'}
+              </Text>
+              <Text style={[styles.comparisonCheck, styles.comparisonCheckPro]}>
+                {feat.pro ? '\u2713' : '\u2014'}
+              </Text>
             </View>
           ))}
         </View>
@@ -104,7 +119,7 @@ export function PaywallScreen({ onContinueFree, onSubscribe }: PaywallScreenProp
                 Yearly
               </Text>
               <Text style={styles.planPrice}>$19.99/year</Text>
-              <Text style={styles.planSavings}>$1.67/month \u2014 Save 58%</Text>
+              <Text style={styles.planSavings}>$1.67/month {'\u2014'} Save 58%</Text>
             </View>
           </TouchableOpacity>
 
@@ -150,9 +165,21 @@ export function PaywallScreen({ onContinueFree, onSubscribe }: PaywallScreenProp
         </TouchableOpacity>
 
         <Text style={styles.legal}>
-          Cancel anytime. Subscription auto-renews.{'\n'}
-          Restore Purchases | Terms | Privacy
+          Cancel anytime. Subscription auto-renews.
         </Text>
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => { Linking.openURL(TERMS_URL); }}>
+            <Text style={styles.legalLink}>Terms</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>{' | '}</Text>
+          <TouchableOpacity onPress={() => { Linking.openURL(PRIVACY_URL); }}>
+            <Text style={styles.legalLink}>Privacy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSeparator}>{' | '}</Text>
+          <TouchableOpacity onPress={() => { /* Restore purchases placeholder */ }}>
+            <Text style={styles.legalLink}>Restore Purchases</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -215,39 +242,68 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  featuresGrid: {
+  // Feature Comparison
+  comparisonCard: {
+    backgroundColor: '#FFFFFF10',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
     marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: '#FFFFFF15',
   },
-  featureItem: {
+  comparisonHeader: {
+    flexDirection: 'row',
+    paddingBottom: Spacing.sm,
+    marginBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFFFFF20',
+  },
+  comparisonFeatureHeader: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF99',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  comparisonPlanHeader: {
+    width: 50,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF99',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  comparisonProHeader: {
+    color: Colors.gold,
+  },
+  comparisonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFFFFF10',
   },
-  featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF10',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
+  comparisonRowLast: {
+    borderBottomWidth: 0,
   },
-  featureIcon: {
-    fontSize: 22,
-  },
-  featureInfo: {
+  comparisonFeatureName: {
     flex: 1,
+    fontSize: 15,
+    color: '#FFFFFFDD',
   },
-  featureTitle: {
+  comparisonCheck: {
+    width: 50,
+    textAlign: 'center',
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFFEE',
-    marginBottom: 2,
+    color: '#FFFFFF55',
   },
-  featureDesc: {
-    fontSize: 14,
-    color: '#FFFFFF77',
+  comparisonCheckPro: {
+    color: Colors.gold,
+    fontWeight: '700',
   },
+  // Plans
   plansSection: {
     gap: Spacing.sm,
     marginBottom: Spacing.md,
@@ -360,5 +416,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     marginTop: Spacing.xs,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Spacing.xs,
+  },
+  legalLink: {
+    fontSize: 11,
+    color: '#FFFFFF66',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 11,
+    color: '#FFFFFF44',
   },
 });
